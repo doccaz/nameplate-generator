@@ -428,7 +428,7 @@ function buildTextGeometries(font, lines, size, depth) {
   const lineHeight = size * 1.35;
   const raw = lines.map(line => {
     if (line.trim() === '') return null;
-    const geo = new TextGeometry(line, { font, size, depth, curveSegments: 6, bevelEnabled: false });
+    const geo = new TextGeometry(line, { font, size, height: depth, curveSegments: 6, bevelEnabled: false });
     geo.computeBoundingBox();
     const width = geo.boundingBox.max.x - geo.boundingBox.min.x;
     return { geo, width, minX: geo.boundingBox.min.x };
