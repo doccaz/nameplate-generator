@@ -271,7 +271,7 @@
     </div>
     <div id="export-bar">
       <button class="btn btn-primary" id="exportCombined">Download STL (combined)</button>
-      <button class="btn btn-secondary" id="exportSeparate">Download STL (plate + text, for 2-color)</button>
+      <button class="btn btn-secondary" id="exportSeparate">Download STL (body + text, 2 files)</button>
     </div>
   </div>
 
@@ -587,7 +587,7 @@ document.getElementById('exportSeparate').addEventListener('click', () => {
   if (!lastExportData) return;
   const plateMesh = new THREE.Mesh(lastExportData.plateGeo.clone(), new THREE.MeshStandardMaterial());
   const plateStl = exporter.parse(plateMesh, { binary: true });
-  download(new Blob([plateStl], { type: 'application/octet-stream' }), 'nameplate_plate.stl');
+  download(new Blob([plateStl], { type: 'application/octet-stream' }), 'nameplate_body.stl');
   if (lastExportData.textGeo) {
     setTimeout(() => {
       const textMesh = new THREE.Mesh(lastExportData.textGeo.clone(), new THREE.MeshStandardMaterial());
