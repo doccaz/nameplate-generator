@@ -182,6 +182,25 @@
     font-family:'JetBrains Mono',monospace;background:rgba(26,25,24,0.6);padding:6px 10px;border-radius:6px;
     backdrop-filter:blur(4px);
   }
+  #viewportVersion{
+    position:absolute;bottom:16px;left:16px;font-size:11px;color:var(--muted);
+    font-family:'JetBrains Mono',monospace;background:rgba(26,25,24,0.6);padding:5px 9px;border-radius:6px;
+    backdrop-filter:blur(4px);
+  }
+  #viewportToolbar{position:absolute;top:16px;right:16px;display:flex;gap:8px;}
+  .viewport-btn{
+    font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;
+    background:rgba(40,38,36,0.85);border:1px solid var(--border);
+    padding:7px 12px;border-radius:6px;cursor:pointer;backdrop-filter:blur(4px);
+    transition:border-color .15s,background .15s;
+  }
+  .viewport-btn:hover{border-color:var(--muted);}
+  .viewport-btn.active{background:var(--accent-dim);border-color:var(--accent);color:#fff;}
+  .dim-label{
+    font:600 10.5px 'JetBrains Mono',monospace;color:#fff;
+    background:rgba(20,19,17,0.8);padding:2px 6px;border-radius:4px;
+    white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none;
+  }
   #loading{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:var(--bg);color:var(--muted);font-size:13px;font-family:'JetBrains Mono',monospace;
@@ -220,7 +239,7 @@
         <h1>🏷️ Name Plate Generator</h1>
         <button id="aboutBtn" class="about-btn" title="About this app">i</button>
       </div>
-      <p>Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install. <span class="version-tag">v1.3</span></p>
+      <p>Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.</p>
     </div>
     <div id="sidebar-scroll">
 
@@ -534,7 +553,11 @@
   <div id="viewport">
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
-    <button id="resetViewBtn" style="position:absolute;top:16px;right:16px;font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;background:rgba(40,38,36,0.85);border:1px solid var(--border);padding:7px 12px;border-radius:6px;cursor:pointer;backdrop-filter:blur(4px);">Reset view</button>
+    <div id="viewportVersion">v1.4</div>
+    <div id="viewportToolbar">
+      <button id="dimensionsToggle" class="viewport-btn">📏 Dimensions</button>
+      <button id="resetViewBtn" class="viewport-btn">Reset view</button>
+    </div>
     <div id="loading">loading fonts…</div>
   </div>
 </div>
@@ -546,11 +569,12 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 // ---------- Scene setup ----------
 const holder = document.getElementById('canvas-holder');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x15140f);
+scene.background = new THREE.Color(0x211f1a);
 
 const camera = new THREE.PerspectiveCamera(32, holder.clientWidth / holder.clientHeight, 0.1, 5000);
 camera.up.set(0, 0, 1);
@@ -560,6 +584,16 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(holder.clientWidth, holder.clientHeight);
 holder.appendChild(renderer.domElement);
+
+// Renders the dimension labels (plain HTML, always crisp/camera-facing)
+// as a second pass on top of the WebGL canvas.
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(holder.clientWidth, holder.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+holder.appendChild(labelRenderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 2);
@@ -586,6 +620,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
 }
 new ResizeObserver(resize).observe(holder);
 
@@ -609,8 +644,83 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
 }
 animate();
+
+// ---------- Dimension indicators ----------
+let showDimensions = false;
+const dimensionsGroup = new THREE.Group();
+scene.add(dimensionsGroup);
+
+function clearDimensions() {
+  while (dimensionsGroup.children.length) {
+    const c = dimensionsGroup.children.pop();
+    if (c.isCSS2DObject) c.element.remove();
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) c.material.dispose();
+  }
+}
+
+function addDimLabel(position, text) {
+  const div = document.createElement('div');
+  div.className = 'dim-label';
+  div.textContent = text;
+  const obj = new CSS2DObject(div);
+  obj.position.copy(position);
+  dimensionsGroup.add(obj);
+}
+
+function addDimLine(points, color = 0xffffff) {
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineBasicMaterial({ color });
+  dimensionsGroup.add(new THREE.Line(geo, mat));
+}
+
+// One measured span, drawn offset from the object with extension lines,
+// end ticks, and a centered "N.N mm" label - engineering-drawing style.
+function addDimension(p1, p2, tickAxis, extFrom1, extFrom2, value) {
+  const tickLen = 2;
+  addDimLine([extFrom1, p1], 0x6b6459);
+  addDimLine([extFrom2, p2], 0x6b6459);
+  addDimLine([p1, p2], 0xffffff);
+  addDimLine([p1.clone().addScaledVector(tickAxis, tickLen), p1.clone().addScaledVector(tickAxis, -tickLen)], 0xffffff);
+  addDimLine([p2.clone().addScaledVector(tickAxis, tickLen), p2.clone().addScaledVector(tickAxis, -tickLen)], 0xffffff);
+  addDimLabel(p1.clone().lerp(p2, 0.5), value.toFixed(1) + ' mm');
+}
+
+function buildDimensions(plateW, plateH, plateThickness) {
+  const gap = 8;
+  const hw = plateW / 2, hh = plateH / 2;
+
+  // Width, along the front edge (offset toward -Y).
+  addDimension(
+    new THREE.Vector3(-hw, -hh - gap, 0), new THREE.Vector3(hw, -hh - gap, 0),
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(-hw, -hh, 0), new THREE.Vector3(hw, -hh, 0),
+    plateW
+  );
+  // Height, along the left edge (offset toward -X).
+  addDimension(
+    new THREE.Vector3(-hw - gap, -hh, 0), new THREE.Vector3(-hw - gap, hh, 0),
+    new THREE.Vector3(1, 0, 0),
+    new THREE.Vector3(-hw, -hh, 0), new THREE.Vector3(-hw, hh, 0),
+    plateH
+  );
+  // Thickness, along the back-right corner (offset toward +X).
+  addDimension(
+    new THREE.Vector3(hw + gap, hh, 0), new THREE.Vector3(hw + gap, hh, plateThickness),
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(hw, hh, 0), new THREE.Vector3(hw, hh, plateThickness),
+    plateThickness
+  );
+}
+
+document.getElementById('dimensionsToggle').addEventListener('click', (e) => {
+  showDimensions = !showDimensions;
+  e.currentTarget.classList.toggle('active', showDimensions);
+  scheduleRebuild();
+});
 
 // ---------- Font loading ----------
 const THREE_FONT_BASE = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/';
@@ -1567,6 +1677,9 @@ async function rebuild() {
   }
 
   document.getElementById('sizeReadout').textContent = `${plateW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
+
+  clearDimensions();
+  if (showDimensions) buildDimensions(plateW, plateH, plateThickness);
 
   // Die Cut punches the glyphs straight through the single plate slab.
   // Engrave instead needs two slabs so the cut only goes partway down: a
