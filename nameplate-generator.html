@@ -361,7 +361,7 @@
         </div>
         <div class="row">
           <label for="textInput" data-i18n="field.content">Content (one line per row)</label>
-          <textarea id="textInput">YOUR NAME</textarea>
+          <textarea id="textInput">Mia</textarea>
           <p id="glyphWarning" style="display:none;font-size:11px;color:var(--accent);margin:6px 2px 0;line-height:1.4;"></p>
         </div>
         <div class="row">
@@ -476,12 +476,12 @@
           <div id="lineScalesList"></div>
         </div>
         <div class="row checkrow">
-          <input type="checkbox" id="dotDecorEnabled">
+          <input type="checkbox" id="dotDecorEnabled" checked>
           <label for="dotDecorEnabled"><span data-i18n="field.dotDecor">Decorate the dot on i/j</span>
             <span class="help-icon">?<span class="tip" data-i18n="tip.dotDecor">Swaps the dot above lowercase "i"/"j" for a small icon — heart, star, etc. Only works if the font actually draws the dot as its own separate shape (most do).</span></span>
           </label>
         </div>
-        <div class="row row-split" id="dotDecorRow" style="display:none;">
+        <div class="row row-split" id="dotDecorRow" style="display:flex;">
           <div>
             <label data-i18n="field.icon">Icon</label>
             <select id="dotDecorIcon">
@@ -2762,6 +2762,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverl
 // ---------- init ----------
 updateShapeUI();
 updateTextStyleUI();
+updateDotDecorUI();
 renderLineScales();
 applyI18n();
 rebuild();
