@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Name Plate Generator</title>
+<title>Tagify3D — Parametric Name Plate Generator</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script type="importmap">
@@ -47,8 +48,11 @@
 
   .brand{padding:20px 22px 0 22px;}
   .brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .brand h1{font-size:17px;font-weight:600;margin:0 0 2px 0;letter-spacing:0.2px;}
-  .brand p{font-size:12.5px;color:var(--muted);margin:0 0 18px 0;line-height:1.5;}
+  .brand-logo{display:flex;align-items:center;gap:11px;min-width:0;}
+  .brand-logo img{width:40px;height:auto;flex-shrink:0;}
+  .brand h1{font-size:22px;font-weight:700;margin:0;letter-spacing:0.2px;line-height:1.1;}
+  .brand h1 .three-d{color:var(--accent);font-size:14px;font-weight:700;vertical-align:super;margin-left:1px;}
+  .brand p{font-size:12.5px;color:var(--muted);margin:10px 0 18px 0;line-height:1.5;}
   .version-tag{
     display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;
     color:var(--muted);background:var(--panel-2);border:1px solid var(--border);
@@ -252,13 +256,15 @@
 <div id="aboutOverlay" class="about-overlay" style="display:none;">
   <div class="about-modal">
     <button id="aboutClose" class="about-close" aria-label="Close">&times;</button>
-    <h2>🏷️ Name Plate Generator</h2>
+    <h2><img src="assets/logo.svg" alt="" style="width:28px;vertical-align:-6px;margin-right:6px;">Tagify<span style="color:var(--accent);">3D</span></h2>
     <p>A single-file, in-browser parametric generator for 3D-printable name plates, keychains, and pet tags. Built with three.js — no install, no build step, everything runs client-side.</p>
     <ul>
-      <li>Multi-line text with independent per-line sizing and line spacing</li>
-      <li>A wide range of fonts: sans-serif, script/handwriting, bubble/bold</li>
+      <li>Multi-line text with independent per-line sizing, line spacing, and letter spacing</li>
+      <li>A wide range of fonts, plus Arabic/Hebrew/Hindi/Telugu/Japanese/Chinese/Cyrillic scripts and any custom Google Font by name</li>
       <li>Rounded, Rectangle, Oval, or Contour (outline hugs the letters) base plates</li>
+      <li>Emboss, Engrave, or Die Cut text styles</li>
       <li>Mounting holes or a keychain loop, beveled edges, top/bottom border text</li>
+      <li>Decorate the dot on "i"/"j" with a heart, star, or any custom SVG shape</li>
       <li>One-click style presets to get started fast</li>
       <li>STL export: one combined file, or body + text as two files for multi-color (AMS/MMU) printing</li>
     </ul>
@@ -269,7 +275,10 @@
   <div id="sidebar">
     <div class="brand">
       <div class="brand-row">
-        <h1>🏷️ Name Plate Generator</h1>
+        <div class="brand-logo">
+          <img src="assets/logo.svg" alt="Tagify3D">
+          <h1>Tagify<span class="three-d">3D</span></h1>
+        </div>
         <button id="aboutBtn" class="about-btn" title="About this app">i</button>
       </div>
       <p>Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.</p>
@@ -656,7 +665,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v2.3</div>
+    <div id="viewportVersion">v2.4</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -1515,8 +1524,11 @@ function getDotIconShapes(iconName, customSvg) {
         }));
         const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
         const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
+        // SVGLoader's shapes come out in SVG's native Y-down coordinate space;
+        // our glyph shapes (and everything else in this scene) are Y-up, so
+        // without negating Y here every icon renders upside-down.
         result = rawShapes.map((sh) => {
-          const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: (p.y - cy) * s }));
+          const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: -(p.y - cy) * s }));
           const ns = new THREE.Shape();
           pts.forEach((p, i) => (i === 0 ? ns.moveTo(p.x, p.y) : ns.lineTo(p.x, p.y)));
           ns.closePath();
