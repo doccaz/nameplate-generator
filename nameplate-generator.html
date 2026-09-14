@@ -365,6 +365,8 @@
               <option value="noto_sans_devanagari">Noto Sans Devanagari (Hindi)</option>
               <option value="noto_sans_telugu">Noto Sans Telugu</option>
               <option value="noto_sans_jp">Noto Sans JP (Japanese)</option>
+              <option value="noto_sans_cyrillic">Noto Sans Cyrillic</option>
+              <option value="noto_sans_sc">Noto Sans SC (Chinese)</option>
             </optgroup>
           </select>
         </div>
@@ -628,7 +630,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v2.1</div>
+    <div id="viewportVersion">v2.2</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -873,6 +875,8 @@ const FONT_SOURCES = {
   // This is Noto Sans JP subsetted to Joyo kanji + kana + Latin/punctuation
   // and converted to three.js's typeface JSON format ourselves.
   noto_sans_jp: 'fonts/noto-sans-jp.json',
+  noto_sans_cyrillic: 'fonts/noto-sans-cyrillic.json',
+  noto_sans_sc: 'fonts/noto-sans-sc.json',
 };
 const fontLoader = new FontLoader();
 const fontCache = {};
