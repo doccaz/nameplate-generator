@@ -422,6 +422,32 @@
           </label>
           <div id="lineScalesList"></div>
         </div>
+        <div class="row checkrow">
+          <input type="checkbox" id="dotDecorEnabled">
+          <label for="dotDecorEnabled">Decorate the dot on i/j
+            <span class="help-icon">?<span class="tip">Swaps the dot above lowercase "i"/"j" for a small icon — heart, star, etc. Only works if the font actually draws the dot as its own separate shape (most do).</span></span>
+          </label>
+        </div>
+        <div class="row row-split" id="dotDecorRow" style="display:none;">
+          <div>
+            <label>Icon</label>
+            <select id="dotDecorIcon">
+              <option value="heart">Heart</option>
+              <option value="star">Star</option>
+              <option value="crown">Crown</option>
+              <option value="diamond">Diamond</option>
+              <option value="flower">Flower</option>
+              <option value="paw">Paw print</option>
+              <option value="custom">Custom SVG…</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" id="dotDecorCustomRow" style="display:none;">
+          <label for="dotDecorCustomSvg">Custom SVG path
+            <span class="help-icon">?<span class="tip">Paste an SVG "d" path string (or a full &lt;path d="..."/&gt; tag), viewBox roughly 0-24. Any shape works — trace one on a site like svg-path-editor.com if you don't have one handy.</span></span>
+          </label>
+          <input type="text" id="dotDecorCustomSvg" placeholder='e.g. M12,2 L14.9,8.6 L22,9.2 ...'>
+        </div>
         <div class="row row-split" id="alignRow">
           <div class="checkrow">
             <input type="checkbox" id="centerH" checked>
@@ -630,7 +656,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v2.2</div>
+    <div id="viewportVersion">v2.3</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -646,6 +672,7 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 
 // ---------- Scene setup ----------
 const holder = document.getElementById('canvas-holder');
@@ -890,7 +917,6 @@ function loadFont(name) {
     }, undefined, reject);
   });
 }
-
 // Fonts beyond the curated dropdown: the @compai/font-* CDN mirrors most of
 // Google Fonts by kebab-case slug, one npm package per family. We don't know
 // which weight a given family ships, so try the common ones in order and use
@@ -968,6 +994,9 @@ const els = {
   textDepth: document.getElementById('textDepth'),
   lineSpacing: document.getElementById('lineSpacing'),
   letterSpacing: document.getElementById('letterSpacing'),
+  dotDecorEnabled: document.getElementById('dotDecorEnabled'),
+  dotDecorIcon: document.getElementById('dotDecorIcon'),
+  dotDecorCustomSvg: document.getElementById('dotDecorCustomSvg'),
   centerH: document.getElementById('centerH'),
   centerV: document.getElementById('centerV'),
   offsetX: document.getElementById('offsetX'),
@@ -1273,6 +1302,15 @@ bindSlider(els.borderTextSize, document.getElementById('borderTextSizeVal'), 'mm
 bindSlider(els.borderTextDepth, document.getElementById('borderTextDepthVal'), 'mm');
 [els.topText, els.bottomText].forEach(el => el.addEventListener('input', scheduleRebuild));
 
+function updateDotDecorUI() {
+  document.getElementById('dotDecorRow').style.display = els.dotDecorEnabled.checked ? 'flex' : 'none';
+  document.getElementById('dotDecorCustomRow').style.display =
+    els.dotDecorEnabled.checked && els.dotDecorIcon.value === 'custom' ? 'block' : 'none';
+}
+els.dotDecorEnabled.addEventListener('change', () => { updateDotDecorUI(); scheduleRebuild(); });
+els.dotDecorIcon.addEventListener('change', () => { updateDotDecorUI(); scheduleRebuild(); });
+els.dotDecorCustomSvg.addEventListener('input', scheduleRebuild);
+
 let rebuildTimer = null;
 function scheduleRebuild() {
   clearTimeout(rebuildTimer);
@@ -1286,7 +1324,7 @@ let lastExportData = null; // { plateGeo, textGeo }
 
 // Shared per-line layout so the raised text and the contour-follow outline
 // always line up exactly, whichever plate shape is chosen.
-function computeLineLayout(font, lines, baseSize, lineScales, spacingScale, letterSpacingMM) {
+function computeLineLayout(font, lines, baseSize, lineScales, spacingScale, letterSpacingMM, dotOptions) {
   // Blank lines have no per-line scale entry (they're skipped in the UI list),
   // so they consume a neutral, base-sized slot rather than collapsing to zero.
   const sizes = lines.map((line, i) => line.trim() === '' ? baseSize : baseSize * ((lineScales[i] ?? 100) / 100));
@@ -1300,7 +1338,7 @@ function computeLineLayout(font, lines, baseSize, lineScales, spacingScale, lett
     // Scale the absolute letter-spacing value by this line's own size so mixed
     // per-line sizes keep visually consistent relative spacing.
     const spacing = letterSpacingMM * (size / baseSize);
-    const { shapes, width, charAdvances } = layoutLineChars(font, line, size, spacing);
+    const { shapes, width, charAdvances } = layoutLineChars(font, line, size, spacing, dotOptions);
     const xOff = -width / 2;
     const yOff = cursor - lh * 0.72;
     cursor -= lh;
@@ -1313,12 +1351,25 @@ function buildTextGeometries(layout, font, depth, bevel) {
   const geoms = [];
   layout.forEach(ld => {
     if (!ld) return;
-    ld.charAdvances.forEach(({ ch, x }) => {
+    ld.charAdvances.forEach(({ ch, x, dotReplaced }) => {
       if (ch.trim() === '' || !fontHasGlyph(font, ch)) return;
-      const geo = new TextGeometry(ch, {
-        font, size: ld.size, height: depth, curveSegments: 8,
-        bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
-      });
+      let geo;
+      if (dotReplaced) {
+        // Built from the same (raw, unpositioned) shapes layoutLineChars
+        // already computed for this character, so the dot swap matches
+        // exactly what Contour/Engrave/Die Cut see - just extruded directly
+        // instead of going through TextGeometry (which would regenerate the
+        // original, un-swapped glyph from scratch).
+        geo = new THREE.ExtrudeGeometry([...dotReplaced.stemShapes, ...dotReplaced.iconShapes], {
+          depth, curveSegments: 8,
+          bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
+        });
+      } else {
+        geo = new TextGeometry(ch, {
+          font, size: ld.size, height: depth, curveSegments: 8,
+          bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
+        });
+      }
       geo.translate(x + ld.xOff, ld.yOff, 0);
       geoms.push(geo);
     });
@@ -1412,7 +1463,101 @@ function fontHasGlyph(font, ch) {
   return !!(glyphs && (glyphs[ch] || glyphs['?']));
 }
 
-function layoutLineChars(font, line, size, letterSpacingMM) {
+// ---------- Decorative i/j dot replacement ----------
+// Simple hand-authored icon outlines (24x24 viewBox), not traced from any
+// existing icon set - basic geometric symbols aren't copyrightable anyway.
+const DOT_ICON_SVG = {
+  heart: '<path d="M12,4 C10,1 6,1 4,4 C2,7 3,10 7,13 L12,18 L17,13 C21,10 22,7 20,4 C18,1 14,1 12,4 Z"/>',
+  star: '<path d="M12,2 L14.9,8.6 L22,9.2 L16.5,13.8 L18.2,20.8 L12,17 L5.8,20.8 L7.5,13.8 L2,9.2 L9.1,8.6 Z"/>',
+  crown: '<path d="M2,19 L5,8 L9,13 L12,4 L15,13 L19,8 L22,19 Z"/>',
+  diamond: '<path d="M12,2 L20,12 L12,22 L4,12 Z"/>',
+  flower: `
+    <path d="M12,6 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path d="M12,18 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path d="M18,12 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path d="M6,12 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path d="M12,12 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"/>
+  `,
+  paw: `
+    <path d="M12,16 m-6,0 a6,4.5 0 1,0 12,0 a6,4.5 0 1,0 -12,0"/>
+    <path d="M4,8 m-2.3,0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0"/>
+    <path d="M9,4 m-2.3,0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0"/>
+    <path d="M15,4 m-2.3,0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0"/>
+    <path d="M20,8 m-2.3,0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0"/>
+  `,
+};
+
+const svgLoaderInstance = new SVGLoader();
+const dotIconCache = {};
+// Parses+normalizes an icon (built-in or a custom pasted SVG path) to a set
+// of shapes centered on the origin and scaled to fit a 1x1 box, so callers
+// can scale/position them to match wherever a dot needs to sit.
+function getDotIconShapes(iconName, customSvg) {
+  const cacheKey = iconName === 'custom' ? 'custom:' + customSvg : iconName;
+  if (dotIconCache[cacheKey] !== undefined) return dotIconCache[cacheKey];
+  let inner = null;
+  if (iconName === 'custom') {
+    const trimmed = (customSvg || '').trim();
+    if (trimmed) inner = trimmed.startsWith('<') ? trimmed : `<path d="${trimmed}"/>`;
+  } else {
+    inner = DOT_ICON_SVG[iconName];
+  }
+  let result = null;
+  if (inner) {
+    try {
+      const data = svgLoaderInstance.parse(`<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`);
+      const rawShapes = data.paths.flatMap((p) => p.toShapes(true));
+      if (rawShapes.length) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        rawShapes.forEach((sh) => sh.getPoints(24).forEach((p) => {
+          minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+          minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+        }));
+        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
+        result = rawShapes.map((sh) => {
+          const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: (p.y - cy) * s }));
+          const ns = new THREE.Shape();
+          pts.forEach((p, i) => (i === 0 ? ns.moveTo(p.x, p.y) : ns.lineTo(p.x, p.y)));
+          ns.closePath();
+          return ns;
+        });
+      }
+    } catch (e) { /* malformed custom SVG - fall through to null (no replacement) */ }
+  }
+  dotIconCache[cacheKey] = result;
+  return result;
+}
+
+// Identifies the tittle (dot) among a character's raw glyph shapes: the
+// topmost shape, only if it's clearly separated (no vertical overlap) from
+// everything else and reasonably small - guards against misfiring on fonts
+// where "i" doesn't decompose into separate stem+dot shapes at all.
+function extractDotShape(rawShapes) {
+  if (rawShapes.length < 2) return null;
+  const boxes = rawShapes.map((sh) => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    sh.getPoints(8).forEach((p) => {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    });
+    return { sh, minX, maxX, minY, maxY };
+  });
+  const sorted = [...boxes].sort((a, b) => b.minY - a.minY);
+  const dot = sorted[0];
+  const rest = sorted.slice(1);
+  const restMaxY = Math.max(...rest.map((b) => b.maxY));
+  const overallMinY = Math.min(...boxes.map((b) => b.minY));
+  const overallMaxY = Math.max(...boxes.map((b) => b.maxY));
+  const totalH = overallMaxY - overallMinY;
+  const dotH = dot.maxY - dot.minY;
+  if (dot.minY >= restMaxY - 0.01 && dotH > 0 && dotH < totalH * 0.45) {
+    return { dot, rest };
+  }
+  return null;
+}
+
+function layoutLineChars(font, line, size, letterSpacingMM, dotOptions) {
   const resolution = font.data.resolution || 1000;
   const scale = size / resolution;
   const chars = Array.from(line);
@@ -1420,10 +1565,34 @@ function layoutLineChars(font, line, size, letterSpacingMM) {
   const charAdvances = [];
   let cursorX = 0;
   chars.forEach((ch, idx) => {
-    charAdvances.push({ ch, x: cursorX });
+    const entry = { ch, x: cursorX };
+    charAdvances.push(entry);
     if (ch.trim() !== '' && fontHasGlyph(font, ch)) {
-      const raw = font.generateShapes(ch, size);
-      raw.forEach(sh => shapes.push(cloneShapeWithHoles(sh, cursorX, 0, 24)));
+      let useShapes = font.generateShapes(ch, size);
+      if (dotOptions && dotOptions.enabled && (ch === 'i' || ch === 'j')) {
+        const extracted = extractDotShape(useShapes);
+        if (extracted) {
+          const iconNorm = getDotIconShapes(dotOptions.icon, dotOptions.customSvg);
+          if (iconNorm) {
+            const dotW = extracted.dot.maxX - extracted.dot.minX;
+            const dotH = extracted.dot.maxY - extracted.dot.minY;
+            const dotCx = (extracted.dot.minX + extracted.dot.maxX) / 2;
+            const dotCy = (extracted.dot.minY + extracted.dot.maxY) / 2;
+            const iconScale = Math.max(dotW, dotH) * 1.15; // a touch larger than the dot it replaces
+            const stemShapes = extracted.rest.map((b) => b.sh);
+            const iconShapes = iconNorm.map((ns) => {
+              const pts = ns.getPoints(24).map((p) => ({ x: p.x * iconScale + dotCx, y: p.y * iconScale + dotCy }));
+              const s = new THREE.Shape();
+              pts.forEach((p, i) => (i === 0 ? s.moveTo(p.x, p.y) : s.lineTo(p.x, p.y)));
+              s.closePath();
+              return s;
+            });
+            useShapes = [...stemShapes, ...iconShapes];
+            entry.dotReplaced = { stemShapes, iconShapes };
+          }
+        }
+      }
+      useShapes.forEach(sh => shapes.push(cloneShapeWithHoles(sh, cursorX, 0, 24)));
     }
     const glyph = font.data.glyphs && (font.data.glyphs[ch] || font.data.glyphs['?']);
     const advance = glyph && glyph.ha !== undefined ? glyph.ha * scale : size * 0.6;
@@ -1821,7 +1990,12 @@ async function rebuild() {
     m.material.dispose();
   }
 
-  const layout = computeLineLayout(font, lines, size, lineScales, spacingScale, letterSpacing);
+  const dotOptions = {
+    enabled: els.dotDecorEnabled.checked,
+    icon: els.dotDecorIcon.value,
+    customSvg: els.dotDecorCustomSvg.value,
+  };
+  const layout = computeLineLayout(font, lines, size, lineScales, spacingScale, letterSpacing, dotOptions);
   const bevel = els.bevelEnabled.checked ? Math.min(parseFloat(els.bevelSize.value), plateThickness * 0.45, depth * 0.45) : 0;
   const textGeoms = buildTextGeometries(layout, font, depth, bevel);
   // Contour/keyring geometry (neck width, bridge width) needs one representative
