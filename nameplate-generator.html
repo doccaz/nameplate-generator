@@ -232,6 +232,14 @@
       <div class="section">
         <div class="section-title">TEXT</div>
         <div class="row">
+          <label>Text style</label>
+          <div class="segbtns" id="textStyleButtons">
+            <button data-style="emboss" class="active">Emboss</button>
+            <button data-style="engrave">Engrave</button>
+            <button data-style="diecut">Die Cut</button>
+          </div>
+        </div>
+        <div class="row">
           <label for="textInput">Content (one line per row)</label>
           <textarea id="textInput">YOUR NAME</textarea>
         </div>
@@ -280,8 +288,8 @@
             <span class="val" id="fontSizeVal">12 mm</span>
           </div>
         </div>
-        <div class="row">
-          <label>Text depth (raised height)</label>
+        <div class="row" id="textDepthRow">
+          <label id="textDepthLabel">Text depth (raised height)</label>
           <div class="slidewrap">
             <input type="range" id="textDepth" min="0.4" max="6" step="0.2" value="1.2">
             <span class="val" id="textDepthVal">1.2 mm</span>
@@ -475,7 +483,7 @@
           <input type="color" id="plateColor" value="#d8d3c8">
           <span>Plate</span>
         </div>
-        <div class="row colorrow">
+        <div class="row colorrow" id="textColorRow">
           <input type="color" id="textColor" value="#e8672f">
           <span>Text</span>
         </div>
@@ -673,7 +681,23 @@ els.contourConnect.addEventListener('change', scheduleRebuild);
 
 let shapeMode = 'rounded';
 let holeMode = 'none';
+let textStyle = 'emboss'; // 'emboss' | 'engrave' | 'diecut'
 let lineScales = {}; // line index -> percent (100 = base text height)
+
+function updateTextStyleUI() {
+  document.getElementById('textDepthRow').style.display = textStyle === 'diecut' ? 'none' : 'block';
+  document.getElementById('textDepthLabel').textContent = textStyle === 'engrave' ? 'Engrave depth' : 'Text depth (raised height)';
+  document.getElementById('textColorRow').style.display = textStyle === 'emboss' ? 'flex' : 'none';
+}
+
+document.getElementById('textStyleButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  textStyle = btn.dataset.style;
+  updateTextStyleUI();
+  scheduleRebuild();
+});
 
 function renderLineScales() {
   const lines = els.text.value.split('\n');
@@ -746,6 +770,9 @@ function applyPreset(name) {
   els.lineSpacing.value = 100;
   document.getElementById('lineSpacingVal').textContent = '100%';
   renderLineScales();
+  textStyle = 'emboss';
+  document.querySelectorAll('#textStyleButtons button').forEach(b => b.classList.toggle('active', b.dataset.style === 'emboss'));
+  updateTextStyleUI();
   els.plateColor.value = p.plateColor;
   els.textColor.value = p.textColor;
 
@@ -949,6 +976,63 @@ function getLetterPolygons(layout) {
     });
   });
   return polys;
+}
+
+// The inner counters (the hole in "O", the loop of "e"/"a"...) that
+// getLetterPolygons deliberately discards - needed to punch Engrave/Die Cut
+// cuts without losing those counters as floating holes in the cut itself.
+function getGlyphCounters(layout) {
+  const counters = [];
+  layout.forEach(ld => {
+    if (!ld) return;
+    ld.shapes.forEach(sh => (sh.holes || []).forEach(h => {
+      const pts = h.getPoints(12).map(p => ({ x: p.x + ld.xOff, y: p.y + ld.yOff }));
+      if (pts.length >= 3) counters.push(pts);
+    }));
+  });
+  return counters;
+}
+
+function shiftPoly(poly, dx, dy) {
+  return poly.map(p => ({ x: p.x + dx, y: p.y + dy }));
+}
+
+// Rebuilds a THREE.Shape (outline + holes) from sampled points, so it can be
+// mutated independently of the shape it was cloned from (used to give the
+// Engrave top slab its own glyph cuts while the base slab stays solid).
+function cloneShapeWithHoles(shape) {
+  const pts = shape._pts || shape.getPoints(64);
+  const s = new THREE.Shape();
+  pts.forEach((p, i) => (i === 0 ? s.moveTo(p.x, p.y) : s.lineTo(p.x, p.y)));
+  s.closePath();
+  s.holes = (shape.holes || []).map(h => {
+    const hPts = h.getPoints(64);
+    const hs = new THREE.Path();
+    hPts.forEach((p, i) => (i === 0 ? hs.moveTo(p.x, p.y) : hs.lineTo(p.x, p.y)));
+    hs.closePath();
+    return hs;
+  });
+  return s;
+}
+
+// Punches glyph outlines through a set of plate shapes as holes (Die Cut, or
+// the Engrave top slab), then adds each glyph's own counters back as separate
+// solid shapes so "O"/"e"/"a" keep their natural islands instead of becoming
+// blank blobs.
+function cutGlyphsIntoShapes(shapes, outlines, counters) {
+  outlines.forEach(poly => {
+    const path = new THREE.Path();
+    poly.forEach((p, i) => (i === 0 ? path.moveTo(p.x, p.y) : path.lineTo(p.x, p.y)));
+    path.closePath();
+    const host = shapes.find(s => pointInPolygon(poly[0], s._pts || s.getPoints(64))) || shapes[0];
+    host.holes.push(path);
+  });
+  counters.forEach(poly => {
+    const s = new THREE.Shape();
+    poly.forEach((p, i) => (i === 0 ? s.moveTo(p.x, p.y) : s.lineTo(p.x, p.y)));
+    s.closePath();
+    shapes.push(s);
+  });
 }
 
 function signedArea(poly) {
@@ -1308,6 +1392,17 @@ async function rebuild() {
     textCenterY = (bb.min.y + bb.max.y) / 2;
   }
 
+  // Needed both to place the raised text mesh (Emboss) and to position the
+  // glyph cuts (Engrave/Die Cut) in the same final coordinate space as the
+  // plate, before the plate shapes are built below.
+  const offX = shapeMode === 'contour' ? 0 : (els.centerH.checked ? 0 : parseFloat(els.offsetX.value) || 0) - textCenterX;
+  const offY = shapeMode === 'contour' ? 0 : (els.centerV.checked ? 0 : parseFloat(els.offsetY.value) || 0) - textCenterY;
+  let glyphOutlines = [], glyphCounters = [];
+  if (textStyle !== 'emboss') {
+    glyphOutlines = getLetterPolygons(layout).map(p => shiftPoly(p, offX, offY));
+    glyphCounters = getGlyphCounters(layout).map(p => shiftPoly(p, offX, offY));
+  }
+
   let plateW, plateH, plateShapes;
 
   // Border text (top/bottom captions) doesn't apply to Contour, which is
@@ -1373,10 +1468,29 @@ async function rebuild() {
 
   document.getElementById('sizeReadout').textContent = `${plateW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
 
-  const plateGeo = new THREE.ExtrudeGeometry(plateShapes, {
-    depth: plateThickness, curveSegments: 24,
-    bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, bevelOffset: 0,
-  });
+  // Die Cut punches the glyphs straight through the single plate slab.
+  // Engrave instead needs two slabs so the cut only goes partway down: a
+  // solid base, plus a thin top slab (holding the glyph cuts) stacked on it.
+  if (textStyle === 'diecut' && glyphOutlines.length) {
+    cutGlyphsIntoShapes(plateShapes, glyphOutlines, glyphCounters);
+  }
+
+  let plateGeo;
+  if (textStyle === 'engrave' && glyphOutlines.length) {
+    const engraveDepth = Math.max(0.2, Math.min(depth, plateThickness - 0.4));
+    const baseHeight = plateThickness - engraveDepth;
+    const topShapes = plateShapes.map(cloneShapeWithHoles);
+    cutGlyphsIntoShapes(topShapes, glyphOutlines, glyphCounters);
+    const baseGeo = new THREE.ExtrudeGeometry(plateShapes, { depth: baseHeight, curveSegments: 24 });
+    const topGeo = new THREE.ExtrudeGeometry(topShapes, { depth: engraveDepth, curveSegments: 24 });
+    topGeo.translate(0, 0, baseHeight);
+    plateGeo = mergeGeometries([baseGeo, topGeo], false);
+  } else {
+    plateGeo = new THREE.ExtrudeGeometry(plateShapes, {
+      depth: plateThickness, curveSegments: 24,
+      bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, bevelOffset: 0,
+    });
+  }
 
   const plateMat = new THREE.MeshStandardMaterial({ color: els.plateColor.value, roughness: 0.55, metalness: 0.05 });
   const plateMesh = new THREE.Mesh(plateGeo, plateMat);
@@ -1393,9 +1507,10 @@ async function rebuild() {
     borderGeoms.push(bottomGeo);
   }
 
-  if (mergedTextGeo) {
-    const offX = shapeMode === 'contour' ? 0 : (els.centerH.checked ? 0 : parseFloat(els.offsetX.value) || 0) - textCenterX;
-    const offY = shapeMode === 'contour' ? 0 : (els.centerV.checked ? 0 : parseFloat(els.offsetY.value) || 0) - textCenterY;
+  // Engrave/Die Cut have no separate raised main-text mesh - the lines are
+  // cut into the plate itself above. Border captions stay raised regardless.
+  if (textStyle !== 'emboss') mergedTextGeo = null;
+  else if (mergedTextGeo) {
     mergedTextGeo.translate(offX, offY, 0);
   }
 
@@ -1464,6 +1579,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverl
 
 // ---------- init ----------
 updateShapeUI();
+updateTextStyleUI();
 renderLineScales();
 rebuild();
 </script>
