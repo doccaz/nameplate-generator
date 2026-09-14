@@ -207,6 +207,19 @@
     font-family:'JetBrains Mono',monospace;background:rgba(26,25,24,0.6);padding:5px 9px;border-radius:6px;
     backdrop-filter:blur(4px);
   }
+  #renderStatus{
+    position:absolute;top:16px;left:50%;transform:translateX(-50%);
+    display:none;align-items:center;gap:7px;font-size:12px;color:var(--text);
+    font-family:'Space Grotesk',sans-serif;background:rgba(26,25,24,0.85);
+    padding:7px 12px;border-radius:6px;backdrop-filter:blur(4px);
+    border:1px solid var(--border);
+  }
+  #renderStatus .spinner{
+    width:11px;height:11px;border-radius:50%;
+    border:2px solid var(--border);border-top-color:var(--accent);
+    animation:spin .7s linear infinite;flex-shrink:0;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
   #viewportToolbar{position:absolute;top:16px;right:16px;display:flex;gap:8px;}
   .viewport-btn{
     font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;
@@ -603,7 +616,8 @@
   <div id="viewport">
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
-    <div id="viewportVersion">v1.6</div>
+    <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
+    <div id="viewportVersion">v1.7</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -1688,6 +1702,17 @@ async function rebuild() {
   document.getElementById('loading').style.opacity = '0';
   document.getElementById('loading').style.pointerEvents = 'none';
 
+  // The geometry build below is synchronous and can take a noticeable beat
+  // for longer/multi-line text (one TextGeometry per character, plus
+  // ClipperLib boolean work for contour/Engrave/Die Cut) - show a spinner
+  // and yield a frame first so it actually paints before the work blocks.
+  const renderStatus = document.getElementById('renderStatus');
+  renderStatus.style.display = 'flex';
+  // setTimeout, not requestAnimationFrame - rAF callbacks are paused
+  // indefinitely for a backgrounded/inactive tab, which would hang this
+  // await (and the whole rebuild) forever whenever the page isn't focused.
+  await new Promise((r) => setTimeout(r, 0));
+
   const lines = els.text.value.split('\n');
   const size = parseFloat(els.fontSize.value);
   const spacingScale = parseFloat(els.lineSpacing.value) / 100;
@@ -1866,6 +1891,7 @@ async function rebuild() {
   }
 
   lastExportData = { plateGeo: plateGeo.clone(), textGeo: mergedTextGeo ? mergedTextGeo.clone() : null };
+  renderStatus.style.display = 'none';
 }
 
 // ---------- Export ----------
