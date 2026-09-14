@@ -74,16 +74,6 @@
   }
   .lang-select:hover{border-color:var(--muted);}
 
-  .gh-ribbon{position:fixed;bottom:0;right:0;width:140px;height:140px;overflow:hidden;z-index:50;pointer-events:none;}
-  .gh-ribbon a{
-    position:absolute;top:50%;left:50%;transform:translate(-50%, -50%) rotate(-45deg);
-    width:190px;text-align:center;padding:5px 0;
-    background:var(--accent);color:#201e1c;
-    font:600 12px 'Space Grotesk',sans-serif;text-decoration:none;white-space:nowrap;
-    box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:auto;
-  }
-  .gh-ribbon a:hover{filter:brightness(1.1);}
-
   .about-overlay{
     position:fixed;inset:0;background:rgba(10,9,8,0.6);backdrop-filter:blur(2px);
     display:flex;align-items:center;justify-content:center;z-index:100;
@@ -284,7 +274,6 @@
 </style>
 </head>
 <body>
-<div class="gh-ribbon"><a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Fork me on GitHub</a></div>
 <div id="aboutOverlay" class="about-overlay" style="display:none;">
   <div class="about-modal">
     <button id="aboutClose" class="about-close" aria-label="Close">&times;</button>
@@ -709,7 +698,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.11</div>
+    <div id="viewportVersion">v2.12</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
