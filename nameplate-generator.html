@@ -82,6 +82,12 @@
   .slidewrap input[type=range]{flex:1;}
   .slidewrap .val{width:52px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);flex-shrink:0;}
 
+  .linescale-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .linescale-row:last-child{margin-bottom:0;}
+  .linescale-row .lbl{width:64px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--muted);}
+  .linescale-row input[type=range]{flex:1;}
+  .linescale-row .val{width:38px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text);flex-shrink:0;}
+
   .segbtns{display:flex;gap:6px;}
   .segbtns button{
     flex:1;background:var(--panel-2);border:1px solid var(--border);color:var(--muted);
@@ -221,6 +227,17 @@
             <input type="range" id="textDepth" min="0.4" max="6" step="0.2" value="1.2">
             <span class="val" id="textDepthVal">1.2 mm</span>
           </div>
+        </div>
+        <div class="row">
+          <label>Line spacing</label>
+          <div class="slidewrap">
+            <input type="range" id="lineSpacing" min="60" max="200" step="5" value="100">
+            <span class="val" id="lineSpacingVal">100%</span>
+          </div>
+        </div>
+        <div class="row" id="lineScalesRow" style="display:none;">
+          <label>Per-line size (% of text height)</label>
+          <div id="lineScalesList"></div>
         </div>
         <div class="row row-split" id="alignRow">
           <div class="checkrow">
@@ -549,6 +566,7 @@ const els = {
   font: document.getElementById('fontSelect'),
   fontSize: document.getElementById('fontSize'),
   textDepth: document.getElementById('textDepth'),
+  lineSpacing: document.getElementById('lineSpacing'),
   centerH: document.getElementById('centerH'),
   centerV: document.getElementById('centerV'),
   offsetX: document.getElementById('offsetX'),
@@ -596,6 +614,38 @@ els.contourConnect.addEventListener('change', scheduleRebuild);
 
 let shapeMode = 'rounded';
 let holeMode = 'none';
+let lineScales = {}; // line index -> percent (100 = base text height)
+
+function renderLineScales() {
+  const lines = els.text.value.split('\n');
+  const row = document.getElementById('lineScalesRow');
+  const container = document.getElementById('lineScalesList');
+  row.style.display = lines.length > 1 ? 'block' : 'none';
+  container.innerHTML = '';
+  lines.forEach((line, i) => {
+    if (line.trim() === '') return;
+    if (lineScales[i] === undefined) lineScales[i] = 100;
+    const wrap = document.createElement('div');
+    wrap.className = 'linescale-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'lbl';
+    lbl.textContent = line.length > 9 ? line.slice(0, 9) + '…' : line;
+    lbl.title = line;
+    const slider = document.createElement('input');
+    slider.type = 'range'; slider.min = '40'; slider.max = '200'; slider.step = '5';
+    slider.value = lineScales[i];
+    const val = document.createElement('span');
+    val.className = 'val';
+    val.textContent = lineScales[i] + '%';
+    slider.addEventListener('input', () => {
+      lineScales[i] = parseFloat(slider.value);
+      val.textContent = slider.value + '%';
+      scheduleRebuild();
+    });
+    wrap.append(lbl, slider, val);
+    container.appendChild(wrap);
+  });
+}
 
 const PRESETS = {
   bubble: {
@@ -633,6 +683,10 @@ function applyPreset(name) {
   document.getElementById('fontSizeVal').textContent = p.fontSize + ' mm';
   els.textDepth.value = p.textDepth;
   document.getElementById('textDepthVal').textContent = p.textDepth + ' mm';
+  lineScales = {};
+  els.lineSpacing.value = 100;
+  document.getElementById('lineSpacingVal').textContent = '100%';
+  renderLineScales();
   els.plateColor.value = p.plateColor;
   els.textColor.value = p.textColor;
 
@@ -726,13 +780,19 @@ function bindSlider(input, out, unit) {
 }
 bindSlider(els.fontSize, document.getElementById('fontSizeVal'), 'mm');
 bindSlider(els.textDepth, document.getElementById('textDepthVal'), 'mm');
+bindSlider(els.lineSpacing, document.getElementById('lineSpacingVal'), '%');
 bindSlider(els.padding, document.getElementById('paddingVal'), 'mm');
 bindSlider(els.contourMargin, document.getElementById('contourMarginVal'), 'mm');
 bindSlider(els.cornerRadius, document.getElementById('cornerRadiusVal'), 'mm');
 bindSlider(els.plateThickness, document.getElementById('plateThicknessVal'), 'mm');
 
-[els.text, els.font, els.plateWidth, els.plateHeight, els.holeDiameter, els.holeMargin, els.plateColor, els.textColor]
+[els.font, els.plateWidth, els.plateHeight, els.holeDiameter, els.holeMargin, els.plateColor, els.textColor]
   .forEach(el => el.addEventListener('input', scheduleRebuild));
+
+els.text.addEventListener('input', () => {
+  renderLineScales();
+  scheduleRebuild();
+});
 
 [els.centerH, els.centerV].forEach(el => el.addEventListener('change', () => {
   updateShapeUI();
@@ -763,28 +823,35 @@ let lastExportData = null; // { plateGeo, textGeo }
 
 // Shared per-line layout so the raised text and the contour-follow outline
 // always line up exactly, whichever plate shape is chosen.
-function computeLineLayout(font, lines, size) {
-  const lineHeight = size * 1.35;
-  const totalHeight = lines.length * lineHeight;
+function computeLineLayout(font, lines, baseSize, lineScales, spacingScale) {
+  // Blank lines have no per-line scale entry (they're skipped in the UI list),
+  // so they consume a neutral, base-sized slot rather than collapsing to zero.
+  const sizes = lines.map((line, i) => line.trim() === '' ? baseSize : baseSize * ((lineScales[i] ?? 100) / 100));
+  const lineHeights = sizes.map(s => s * 1.35 * spacingScale);
+  const totalHeight = lineHeights.reduce((a, b) => a + b, 0);
+  let cursor = totalHeight / 2;
   const lineData = lines.map((line, i) => {
-    if (line.trim() === '') return null;
+    const lh = lineHeights[i];
+    if (line.trim() === '') { cursor -= lh; return null; }
+    const size = sizes[i];
     const shapes = font.generateShapes(line, size);
     let minX = Infinity, maxX = -Infinity;
     shapes.forEach(sh => sh.getPoints().forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); }));
     const width = maxX - minX;
     const xOff = -width / 2 - minX;
-    const yOff = totalHeight / 2 - i * lineHeight - lineHeight * 0.72;
-    return { line, shapes, xOff, yOff, width };
+    const yOff = cursor - lh * 0.72;
+    cursor -= lh;
+    return { line, shapes, xOff, yOff, width, size };
   });
   return lineData;
 }
 
-function buildTextGeometries(layout, font, size, depth, bevel) {
+function buildTextGeometries(layout, font, depth, bevel) {
   const geoms = [];
   layout.forEach(ld => {
     if (!ld) return;
     const geo = new TextGeometry(ld.line, {
-      font, size, height: depth, curveSegments: 8,
+      font, size: ld.size, height: depth, curveSegments: 8,
       bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
     });
     geo.translate(ld.xOff, ld.yOff, 0);
@@ -1152,6 +1219,7 @@ async function rebuild() {
 
   const lines = els.text.value.split('\n');
   const size = parseFloat(els.fontSize.value);
+  const spacingScale = parseFloat(els.lineSpacing.value) / 100;
   const depth = parseFloat(els.textDepth.value);
   const plateThickness = parseFloat(els.plateThickness.value);
 
@@ -1162,9 +1230,12 @@ async function rebuild() {
     m.material.dispose();
   }
 
-  const layout = computeLineLayout(font, lines, size);
+  const layout = computeLineLayout(font, lines, size, lineScales, spacingScale);
   const bevel = els.bevelEnabled.checked ? Math.min(parseFloat(els.bevelSize.value), plateThickness * 0.45, depth * 0.45) : 0;
-  const textGeoms = buildTextGeometries(layout, font, size, depth, bevel);
+  const textGeoms = buildTextGeometries(layout, font, depth, bevel);
+  // Contour/keyring geometry (neck width, bridge width) needs one representative
+  // size; use the largest line so those stay printable even with a tiny line mixed in.
+  const maxLineSize = layout.reduce((m, ld) => ld ? Math.max(m, ld.size) : m, size);
   let textWidth = size * 4, textHeight = size * 1.6;
   let textCenterX = 0, textCenterY = 0;
   let mergedTextGeo = null;
@@ -1201,7 +1272,7 @@ async function rebuild() {
       holeDiameter: parseFloat(els.keyringHoleDiameter.value),
       tabDiameter: parseFloat(els.keyringTabSize.value),
     };
-    const contour = buildContourShapes(layout, parseFloat(els.contourMargin.value), keyring, els.contourConnect.checked, size);
+    const contour = buildContourShapes(layout, parseFloat(els.contourMargin.value), keyring, els.contourConnect.checked, maxLineSize);
     if (contour) {
       plateShapes = contour.shapes;
       plateW = contour.width;
@@ -1236,7 +1307,7 @@ async function rebuild() {
         side: keyringSide,
         holeDiameter: parseFloat(els.keyringHoleDiameter.value),
         tabDiameter: parseFloat(els.keyringTabSize.value),
-      }, size);
+      }, maxLineSize);
     }
     plateShapes = [shape];
   }
@@ -1327,6 +1398,7 @@ document.getElementById('exportSeparate').addEventListener('click', () => {
 
 // ---------- init ----------
 updateShapeUI();
+renderLineScales();
 rebuild();
 </script>
 </body>
