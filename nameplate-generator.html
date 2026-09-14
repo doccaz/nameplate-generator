@@ -618,8 +618,8 @@ const PRESETS = {
   },
   twotone: {
     font: 'nunito_extrabold', fontSize: 13, textDepth: 2,
-    shapeMode: 'rounded', cornerRadius: 8, autoFit: true, padding: 8,
-    keyringEnabled: false, holeMode: '1',
+    shapeMode: 'rounded', cornerRadius: 8, autoFit: true, padding: 16,
+    keyringEnabled: false, holeMode: '1', holeDiameter: 4, holeMargin: 8,
     plateColor: '#2fbfa6', textColor: '#ffffff',
   },
 };
@@ -657,6 +657,8 @@ function applyPreset(name) {
     holeMode = p.holeMode || 'none';
     document.querySelectorAll('#holeButtons button').forEach(b => b.classList.toggle('active', b.dataset.holes === holeMode));
     document.getElementById('holeParamsRow').style.display = holeMode === 'none' ? 'none' : 'flex';
+    if (p.holeDiameter !== undefined) els.holeDiameter.value = p.holeDiameter;
+    if (p.holeMargin !== undefined) els.holeMargin.value = p.holeMargin;
   }
 
   els.keyringEnabled.checked = !!p.keyringEnabled;
