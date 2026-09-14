@@ -307,6 +307,7 @@
         <div class="row">
           <label for="textInput">Content (one line per row)</label>
           <textarea id="textInput">YOUR NAME</textarea>
+          <p id="glyphWarning" style="display:none;font-size:11px;color:var(--accent);margin:6px 2px 0;line-height:1.4;"></p>
         </div>
         <div class="row">
           <label for="fontSelect">Typeface</label>
@@ -617,7 +618,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v1.8</div>
+    <div id="viewportVersion">v1.9</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -1275,7 +1276,7 @@ function buildTextGeometries(layout, font, depth, bevel) {
   layout.forEach(ld => {
     if (!ld) return;
     ld.charAdvances.forEach(({ ch, x }) => {
-      if (ch.trim() === '') return;
+      if (ch.trim() === '' || !fontHasGlyph(font, ch)) return;
       const geo = new TextGeometry(ch, {
         font, size: ld.size, height: depth, curveSegments: 8,
         bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
@@ -1291,6 +1292,8 @@ function buildTextGeometries(layout, font, depth, bevel) {
 // captions), independent of the main text's centering logic.
 function buildBorderTextGeometry(font, text, size, depth, bevel) {
   if (!text || !text.trim()) return null;
+  text = Array.from(text).filter((ch) => ch.trim() === '' || fontHasGlyph(font, ch)).join('');
+  if (!text.trim()) return null;
   const geo = new TextGeometry(text, {
     font, size, height: depth, curveSegments: 8,
     bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, bevelOffset: 0,
@@ -1361,6 +1364,16 @@ function cloneShapeWithHoles(shape, dx = 0, dy = 0, resolution = 64) {
 // inserted between glyphs. Each character's shapes come back pre-translated
 // to their final x position, using the font's own advance-width metrics
 // (font.data.glyphs[ch].ha) for natural spacing between the extra gaps.
+// Not every loaded font has every character (see glyphWarning in rebuild());
+// THREE.Font.generateShapes()/TextGeometry throw when a font has neither the
+// requested glyph nor a "?" fallback, instead of degrading gracefully - so
+// every per-character call site needs to check first and skip, not just rely
+// on try/catch.
+function fontHasGlyph(font, ch) {
+  const glyphs = font.data && font.data.glyphs;
+  return !!(glyphs && (glyphs[ch] || glyphs['?']));
+}
+
 function layoutLineChars(font, line, size, letterSpacingMM) {
   const resolution = font.data.resolution || 1000;
   const scale = size / resolution;
@@ -1370,11 +1383,11 @@ function layoutLineChars(font, line, size, letterSpacingMM) {
   let cursorX = 0;
   chars.forEach((ch, idx) => {
     charAdvances.push({ ch, x: cursorX });
-    if (ch.trim() !== '') {
+    if (ch.trim() !== '' && fontHasGlyph(font, ch)) {
       const raw = font.generateShapes(ch, size);
       raw.forEach(sh => shapes.push(cloneShapeWithHoles(sh, cursorX, 0, 24)));
     }
-    const glyph = (font.data.glyphs && font.data.glyphs[ch]) || (font.data.glyphs && font.data.glyphs['?']);
+    const glyph = font.data.glyphs && (font.data.glyphs[ch] || font.data.glyphs['?']);
     const advance = glyph && glyph.ha !== undefined ? glyph.ha * scale : size * 0.6;
     cursorX += advance + (idx < chars.length - 1 ? letterSpacingMM : 0);
   });
@@ -1725,6 +1738,23 @@ async function rebuild() {
   }
   document.getElementById('loading').style.opacity = '0';
   document.getElementById('loading').style.pointerEvents = 'none';
+
+  // Not every font (built-in or custom-loaded) actually has glyphs for every
+  // script - e.g. this CDN's CJK/Cyrillic font packages turned out to only
+  // carry a basic Latin subset despite the family name. Rather than let
+  // those characters silently vanish, tell the user which ones are missing.
+  {
+    const glyphs = font.data && font.data.glyphs;
+    const allText = els.text.value + els.topText.value + els.bottomText.value;
+    const missing = [...new Set(Array.from(allText).filter((ch) => ch.trim() !== '' && glyphs && !glyphs[ch]))];
+    const warnEl = document.getElementById('glyphWarning');
+    if (missing.length) {
+      warnEl.textContent = `⚠ "${els.font.selectedOptions[0]?.textContent || fontName}" has no glyph for: ${missing.join(' ')} — those characters will be blank. Try another font.`;
+      warnEl.style.display = 'block';
+    } else {
+      warnEl.style.display = 'none';
+    }
+  }
 
   // The geometry build below is synchronous and can take a noticeable beat
   // for longer/multi-line text (one TextGeometry per character, plus
