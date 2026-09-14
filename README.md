@@ -3,7 +3,7 @@
 A single-file, in-browser parametric generator for 3D-printable name plates, keychains,
 and pet tags. Built with three.js — no build step, no dependencies to install.
 
-**Live app:** https://docca.github.io/nameplate-generator/
+**Live app:** https://doccaz.github.io/nameplate-generator/
 
 ## Features
 
