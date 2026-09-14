@@ -324,6 +324,14 @@
           </select>
         </div>
         <div class="row">
+          <label for="customFontInput">Custom Google Font (advanced)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="customFontInput" placeholder="e.g. Shadows Into Light" style="flex:1;">
+            <button id="customFontLoad" class="btn btn-secondary" style="width:auto;white-space:nowrap;padding:8px 14px;">Load</button>
+          </div>
+          <p id="customFontStatus" style="font-size:11px;color:var(--muted);margin:6px 2px 0;line-height:1.4;"></p>
+        </div>
+        <div class="row">
           <label>Text height</label>
           <div class="slidewrap">
             <input type="range" id="fontSize" min="4" max="30" step="0.5" value="12">
@@ -553,7 +561,7 @@
   <div id="viewport">
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
-    <div id="viewportVersion">v1.4</div>
+    <div id="viewportVersion">v1.5</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -778,6 +786,75 @@ function loadFont(name) {
     }, undefined, reject);
   });
 }
+
+// Fonts beyond the curated dropdown: the @compai/font-* CDN mirrors most of
+// Google Fonts by kebab-case slug, one npm package per family. We don't know
+// which weight a given family ships, so try the common ones in order and use
+// whichever responds first.
+const CUSTOM_FONT_WEIGHTS = ['400', '700', '600', '500', '300', '800', '900', '200', '100'];
+
+function slugifyFontName(name) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function addCustomFontOption(key, label) {
+  let group = document.getElementById('customFontsGroup');
+  if (!group) {
+    group = document.createElement('optgroup');
+    group.id = 'customFontsGroup';
+    group.label = 'Custom (loaded)';
+    els.font.appendChild(group);
+  }
+  if (!group.querySelector(`option[value="${key}"]`)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    group.appendChild(opt);
+  }
+}
+
+async function loadCustomFont(rawName) {
+  const statusEl = document.getElementById('customFontStatus');
+  const slug = slugifyFontName(rawName);
+  if (!slug) {
+    statusEl.textContent = 'Enter a font name first.';
+    return;
+  }
+  const key = 'custom_' + slug.replace(/-/g, '_');
+  if (FONT_SOURCES[key]) {
+    els.font.value = key;
+    statusEl.textContent = `Already loaded — switched to "${rawName.trim()}".`;
+    scheduleRebuild();
+    return;
+  }
+  statusEl.textContent = `Looking up "${rawName.trim()}" on Google Fonts…`;
+  // Try every weight in parallel - sequential HEAD requests against a family
+  // that doesn't exist on the CDN take one slow 404 round-trip each, which
+  // added up to 10+ seconds for a bad name. Promise.any takes whichever
+  // weight resolves first; which exact weight "wins" doesn't matter much
+  // for a decorative nameplate font.
+  const attempts = CUSTOM_FONT_WEIGHTS.map((weight) => {
+    const url = `${COMPAI_BASE}${slug}/data/typefaces/normal-${weight}.json`;
+    return fetch(url, { method: 'HEAD' }).then((res) => (res.ok ? url : Promise.reject()));
+  });
+  try {
+    const url = await Promise.any(attempts);
+    FONT_SOURCES[key] = url;
+    addCustomFontOption(key, rawName.trim());
+    els.font.value = key;
+    statusEl.textContent = `Loaded "${rawName.trim()}" ✓`;
+    scheduleRebuild();
+  } catch (e) {
+    statusEl.textContent = `Couldn't find "${rawName.trim()}" — try the exact Google Fonts name (e.g. "Shadows Into Light").`;
+  }
+}
+
+document.getElementById('customFontLoad').addEventListener('click', () => {
+  loadCustomFont(document.getElementById('customFontInput').value);
+});
+document.getElementById('customFontInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); loadCustomFont(e.target.value); }
+});
 
 // ---------- Controls state ----------
 const els = {
