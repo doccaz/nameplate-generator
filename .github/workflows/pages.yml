@@ -31,6 +31,7 @@ jobs:
           cp nameplate-generator.html _site/index.html
           cp -r fonts _site/fonts
           cp -r assets _site/assets
+          echo "tagify3d.com" > _site/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
