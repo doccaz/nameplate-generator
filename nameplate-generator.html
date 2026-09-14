@@ -288,6 +288,8 @@
           <button class="btn btn-secondary preset-btn" data-preset="sweetheart" style="text-align:left;">💗 Sweetheart Script — elegant pink cursive, keyring loop</button>
           <button class="btn btn-secondary preset-btn" data-preset="bubblecursive" style="text-align:left;">💜 Bubble Cursive — bold rounded script, keyring loop</button>
           <button class="btn btn-secondary preset-btn" data-preset="vintagemarquee" style="text-align:left;">✨ Vintage Marquee — classic gold cursive on black</button>
+          <button class="btn btn-secondary preset-btn" data-preset="bubblepop" style="text-align:left;">🎀 Bubble Pop — hot pink bold bubble letters, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="licenseplate" style="text-align:left;">🚗 License Plate — small state line + big plate number, top holes</button>
         </div>
         <button id="morePresetsToggle" class="btn btn-secondary" style="margin-top:8px;font-size:12px;">Show more presets ▾</button>
       </div>
@@ -356,6 +358,12 @@
               <option value="bungee">Bungee</option>
               <option value="boogaloo">Boogaloo</option>
               <option value="nunito_extrabold">Nunito ExtraBold</option>
+            </optgroup>
+            <optgroup label="Non-Latin Scripts">
+              <option value="noto_sans_arabic">Noto Sans Arabic</option>
+              <option value="noto_sans_hebrew">Noto Sans Hebrew</option>
+              <option value="noto_sans_devanagari">Noto Sans Devanagari (Hindi)</option>
+              <option value="noto_sans_telugu">Noto Sans Telugu</option>
             </optgroup>
           </select>
         </div>
@@ -547,6 +555,7 @@
             <button data-holes="none" class="active">None</button>
             <button data-holes="1">1 · end</button>
             <button data-holes="2">2 · sides</button>
+            <button data-holes="top2">2 · top</button>
             <button data-holes="4">4 · corners</button>
           </div>
         </div>
@@ -618,7 +627,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v1.9</div>
+    <div id="viewportVersion">v2.0</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -854,6 +863,10 @@ const FONT_SOURCES = {
   parisienne: COMPAI_BASE + 'parisienne/data/typefaces/normal-400.json',
   tangerine: COMPAI_BASE + 'tangerine/data/typefaces/normal-400.json',
   bilbo: COMPAI_BASE + 'bilbo/data/typefaces/normal-400.json',
+  noto_sans_arabic: COMPAI_BASE + 'noto-sans-arabic/data/typefaces/normal-400.json',
+  noto_sans_hebrew: COMPAI_BASE + 'noto-sans-hebrew/data/typefaces/normal-400.json',
+  noto_sans_devanagari: COMPAI_BASE + 'noto-sans-devanagari/data/typefaces/normal-400.json',
+  noto_sans_telugu: COMPAI_BASE + 'noto-sans-telugu/data/typefaces/normal-400.json',
 };
 const fontLoader = new FontLoader();
 const fontCache = {};
@@ -1084,6 +1097,19 @@ const PRESETS = {
     keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 3.5, keyringTabSize: 9,
     plateColor: '#1c1a18', textColor: '#e8c468',
   },
+  bubblepop: {
+    font: 'luckiest_guy', fontSize: 16, textDepth: 2.5,
+    shapeMode: 'contour', contourMargin: 3, contourConnect: true,
+    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 4, keyringTabSize: 10,
+    plateColor: '#ffffff', textColor: '#ff2d8f',
+  },
+  licenseplate: {
+    font: 'bungee', fontSize: 18, textDepth: 1.6,
+    shapeMode: 'rounded', cornerRadius: 6, autoFit: false, plateWidth: 120, plateHeight: 60,
+    keyringEnabled: false, holeMode: 'top2', holeDiameter: 4, holeMargin: 7,
+    lineScales: { 0: 35 }, lineSpacing: 130, letterSpacing: 1,
+    plateColor: '#1c4d8c', textColor: '#ffffff',
+  },
 };
 
 function applyPreset(name) {
@@ -1095,11 +1121,11 @@ function applyPreset(name) {
   document.getElementById('fontSizeVal').textContent = p.fontSize + ' mm';
   els.textDepth.value = p.textDepth;
   document.getElementById('textDepthVal').textContent = p.textDepth + ' mm';
-  lineScales = {};
-  els.lineSpacing.value = 100;
-  document.getElementById('lineSpacingVal').textContent = '100%';
-  els.letterSpacing.value = 0;
-  document.getElementById('letterSpacingVal').textContent = '0 mm';
+  lineScales = p.lineScales ? { ...p.lineScales } : {};
+  els.lineSpacing.value = p.lineSpacing !== undefined ? p.lineSpacing : 100;
+  document.getElementById('lineSpacingVal').textContent = els.lineSpacing.value + '%';
+  els.letterSpacing.value = p.letterSpacing !== undefined ? p.letterSpacing : 0;
+  document.getElementById('letterSpacingVal').textContent = els.letterSpacing.value + ' mm';
   renderLineScales();
   textStyle = 'emboss';
   document.querySelectorAll('#textStyleButtons button').forEach(b => b.classList.toggle('active', b.dataset.style === 'emboss'));
@@ -1125,6 +1151,8 @@ function applyPreset(name) {
       els.padding.value = p.padding;
       document.getElementById('paddingVal').textContent = p.padding + ' mm';
     }
+    if (p.plateWidth !== undefined) els.plateWidth.value = p.plateWidth;
+    if (p.plateHeight !== undefined) els.plateHeight.value = p.plateHeight;
     holeMode = p.holeMode || 'none';
     document.querySelectorAll('#holeButtons button').forEach(b => b.classList.toggle('active', b.dataset.holes === holeMode));
     document.getElementById('holeParamsRow').style.display = holeMode === 'none' ? 'none' : 'flex';
@@ -1719,6 +1747,8 @@ function addHoles(shape, w, h, mode, diameter, margin) {
     ? [[-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy]]
     : mode === '2'
     ? [[-hx, 0], [hx, 0]]
+    : mode === 'top2'
+    ? [[-hx, hy], [hx, hy]]
     : [[hx, 0]];
   positions.forEach(([px, py]) => {
     const hole = new THREE.Path();
