@@ -232,6 +232,12 @@
           <button class="btn btn-secondary preset-btn" data-preset="cursive" style="text-align:left;">✍️ Cursive Charm — script name, keyring loop</button>
           <button class="btn btn-secondary preset-btn" data-preset="twotone" style="text-align:left;">🏷️ Classic Two-Tone — bold block letters on a plate</button>
         </div>
+        <div id="morePresetsPanel" class="row" style="display:none;flex-direction:column;gap:8px;margin-top:8px;">
+          <button class="btn btn-secondary preset-btn" data-preset="sweetheart" style="text-align:left;">💗 Sweetheart Script — elegant pink cursive, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="bubblecursive" style="text-align:left;">💜 Bubble Cursive — bold rounded script, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="vintagemarquee" style="text-align:left;">✨ Vintage Marquee — classic gold cursive on black</button>
+        </div>
+        <button id="morePresetsToggle" class="btn btn-secondary" style="margin-top:8px;font-size:12px;">Show more presets ▾</button>
       </div>
 
       <div class="section">
@@ -272,6 +278,18 @@
               <option value="amatic_sc">Amatic SC</option>
               <option value="lobster">Lobster</option>
               <option value="berkshire_swash">Berkshire Swash</option>
+              <option value="grand_hotel">Grand Hotel</option>
+              <option value="give_you_glory">Give You Glory</option>
+              <option value="mrs_saint_delafield">Mrs Saint Delafield</option>
+              <option value="playball">Playball</option>
+              <option value="kristi">Kristi</option>
+              <option value="marck_script">Marck Script</option>
+              <option value="courgette">Courgette</option>
+              <option value="allura">Allura</option>
+              <option value="italianno">Italianno</option>
+              <option value="parisienne">Parisienne</option>
+              <option value="tangerine">Tangerine</option>
+              <option value="bilbo">Bilbo</option>
             </optgroup>
             <optgroup label="Bubble & Bold">
               <option value="fredoka">Fredoka</option>
@@ -625,6 +643,18 @@ const FONT_SOURCES = {
   bungee: COMPAI_BASE + 'bungee/data/typefaces/normal-400.json',
   boogaloo: COMPAI_BASE + 'boogaloo/data/typefaces/normal-400.json',
   nunito_extrabold: COMPAI_BASE + 'nunito/data/typefaces/normal-800.json',
+  grand_hotel: COMPAI_BASE + 'grand-hotel/data/typefaces/normal-400.json',
+  give_you_glory: COMPAI_BASE + 'give-you-glory/data/typefaces/normal-400.json',
+  mrs_saint_delafield: COMPAI_BASE + 'mrs-saint-delafield/data/typefaces/normal-400.json',
+  playball: COMPAI_BASE + 'playball/data/typefaces/normal-400.json',
+  kristi: COMPAI_BASE + 'kristi/data/typefaces/normal-400.json',
+  marck_script: COMPAI_BASE + 'marck-script/data/typefaces/normal-400.json',
+  courgette: COMPAI_BASE + 'courgette/data/typefaces/normal-400.json',
+  allura: COMPAI_BASE + 'allura/data/typefaces/normal-400.json',
+  italianno: COMPAI_BASE + 'italianno/data/typefaces/normal-400.json',
+  parisienne: COMPAI_BASE + 'parisienne/data/typefaces/normal-400.json',
+  tangerine: COMPAI_BASE + 'tangerine/data/typefaces/normal-400.json',
+  bilbo: COMPAI_BASE + 'bilbo/data/typefaces/normal-400.json',
 };
 const fontLoader = new FontLoader();
 const fontCache = {};
@@ -768,6 +798,24 @@ const PRESETS = {
     keyringEnabled: false, holeMode: '1', holeDiameter: 4, holeMargin: 8,
     plateColor: '#2fbfa6', textColor: '#ffffff',
   },
+  sweetheart: {
+    font: 'mrs_saint_delafield', fontSize: 17, textDepth: 1.8,
+    shapeMode: 'contour', contourMargin: 4.5, contourConnect: true,
+    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 3.5, keyringTabSize: 9,
+    plateColor: '#ffd6e8', textColor: '#ffffff',
+  },
+  bubblecursive: {
+    font: 'courgette', fontSize: 15, textDepth: 2,
+    shapeMode: 'contour', contourMargin: 5, contourConnect: true,
+    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 4, keyringTabSize: 10,
+    plateColor: '#8b6bff', textColor: '#ffd6e8',
+  },
+  vintagemarquee: {
+    font: 'grand_hotel', fontSize: 16, textDepth: 1.8,
+    shapeMode: 'contour', contourMargin: 5, contourConnect: true,
+    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 3.5, keyringTabSize: 9,
+    plateColor: '#1c1a18', textColor: '#e8c468',
+  },
 };
 
 function applyPreset(name) {
@@ -831,6 +879,13 @@ function applyPreset(name) {
 
 document.querySelectorAll('.preset-btn').forEach(btn => {
   btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+});
+
+document.getElementById('morePresetsToggle').addEventListener('click', (e) => {
+  const panel = document.getElementById('morePresetsPanel');
+  const expanded = panel.style.display !== 'none';
+  panel.style.display = expanded ? 'none' : 'flex';
+  e.currentTarget.textContent = expanded ? 'Show more presets ▾' : 'Show fewer presets ▴';
 });
 
 function updateShapeUI() {
