@@ -17,14 +17,15 @@
 <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
 <style>
   :root{
-    --bg:#1a1918;
-    --panel:#211f1e;
-    --panel-2:#282624;
-    --border:#3a3733;
-    --text:#eeeae2;
-    --muted:#9c968c;
+    --bg:#201e1c;
+    --panel:#26231f;
+    --panel-2:#2e2a25;
+    --border:#423d36;
+    --text:#f2ede4;
+    --muted:#a89f92;
     --accent:#e8672f;
     --accent-dim:#7a3b1f;
+    --accent2:#2fbfa6;
     --ok:#7fae6c;
   }
   *{box-sizing:border-box;}
@@ -45,8 +46,46 @@
   #sidebar-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
   .brand{padding:20px 22px 0 22px;}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .brand h1{font-size:17px;font-weight:600;margin:0 0 2px 0;letter-spacing:0.2px;}
   .brand p{font-size:12.5px;color:var(--muted);margin:0 0 18px 0;line-height:1.5;}
+
+  .about-btn{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    background:none;border:1px solid var(--border);color:var(--muted);
+    font-size:13px;font-family:'Space Grotesk',sans-serif;cursor:pointer;line-height:1;
+    transition:border-color .15s,color .15s;
+  }
+  .about-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+  .gh-ribbon{position:fixed;top:0;right:0;width:140px;height:140px;overflow:hidden;z-index:50;pointer-events:none;}
+  .gh-ribbon a{
+    position:absolute;top:32px;right:-36px;transform:rotate(45deg);
+    width:190px;text-align:center;padding:5px 0;
+    background:var(--accent);color:#201e1c;
+    font:600 12px 'Space Grotesk',sans-serif;text-decoration:none;white-space:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:auto;
+  }
+  .gh-ribbon a:hover{filter:brightness(1.1);}
+
+  .about-overlay{
+    position:fixed;inset:0;background:rgba(10,9,8,0.6);backdrop-filter:blur(2px);
+    display:flex;align-items:center;justify-content:center;z-index:100;
+  }
+  .about-modal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    max-width:440px;width:90%;max-height:80vh;overflow-y:auto;
+    padding:26px 28px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.5);
+  }
+  .about-modal h2{margin:0 0 10px 0;font-size:18px;}
+  .about-modal p{font-size:13px;line-height:1.6;color:var(--text);margin:0 0 12px 0;}
+  .about-modal ul{margin:0 0 14px 0;padding-left:18px;font-size:12.5px;color:var(--muted);line-height:1.75;}
+  .about-modal a{color:var(--accent2);}
+  .about-close{
+    position:absolute;top:14px;right:16px;background:none;border:none;
+    color:var(--muted);font-size:20px;cursor:pointer;line-height:1;
+  }
+  .about-close:hover{color:var(--text);}
 
   .section{margin-bottom:22px;}
   .section-title{
@@ -152,11 +191,31 @@
 </style>
 </head>
 <body>
+<div class="gh-ribbon"><a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Fork me on GitHub</a></div>
+<div id="aboutOverlay" class="about-overlay" style="display:none;">
+  <div class="about-modal">
+    <button id="aboutClose" class="about-close" aria-label="Close">&times;</button>
+    <h2>🏷️ Name Plate Generator</h2>
+    <p>A single-file, in-browser parametric generator for 3D-printable name plates, keychains, and pet tags. Built with three.js — no install, no build step, everything runs client-side.</p>
+    <ul>
+      <li>Multi-line text with independent per-line sizing and line spacing</li>
+      <li>A wide range of fonts: sans-serif, script/handwriting, bubble/bold</li>
+      <li>Rounded, Rectangle, Oval, or Contour (outline hugs the letters) base plates</li>
+      <li>Mounting holes or a keychain loop, beveled edges, top/bottom border text</li>
+      <li>One-click style presets to get started fast</li>
+      <li>STL export: one combined file, or body + text as two files for multi-color (AMS/MMU) printing</li>
+    </ul>
+    <p>Open source, MIT licensed.<br><a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">View the code on GitHub →</a></p>
+  </div>
+</div>
 <div id="app">
   <div id="sidebar">
     <div class="brand">
-      <h1>Name Plate Generator</h1>
-      <p>Design a parametric name plate and export it ready to print.</p>
+      <div class="brand-row">
+        <h1>🏷️ Name Plate Generator</h1>
+        <button id="aboutBtn" class="about-btn" title="About this app">i</button>
+      </div>
+      <p>Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.</p>
     </div>
     <div id="sidebar-scroll">
 
@@ -437,7 +496,7 @@
   <div id="viewport">
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
-    <button id="resetViewBtn" style="position:absolute;top:16px;right:16px;font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;background:rgba(40,38,36,0.85);border:1px solid var(--border);padding:7px 12px;border-radius:6px;cursor:pointer;backdrop-filter:blur(4px);">Reset view</button>
+    <button id="resetViewBtn" style="position:absolute;top:62px;right:16px;font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;background:rgba(40,38,36,0.85);border:1px solid var(--border);padding:7px 12px;border-radius:6px;cursor:pointer;backdrop-filter:blur(4px);">Reset view</button>
     <div id="loading">loading fonts…</div>
   </div>
 </div>
@@ -1395,6 +1454,13 @@ document.getElementById('exportSeparate').addEventListener('click', () => {
     }, 400);
   }
 });
+
+// ---------- about modal ----------
+const aboutOverlay = document.getElementById('aboutOverlay');
+document.getElementById('aboutBtn').addEventListener('click', () => { aboutOverlay.style.display = 'flex'; });
+document.getElementById('aboutClose').addEventListener('click', () => { aboutOverlay.style.display = 'none'; });
+aboutOverlay.addEventListener('click', (e) => { if (e.target === aboutOverlay) aboutOverlay.style.display = 'none'; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverlay.style.display = 'none'; });
 
 // ---------- init ----------
 updateShapeUI();
