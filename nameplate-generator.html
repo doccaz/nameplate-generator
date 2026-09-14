@@ -230,7 +230,7 @@
   .viewport-btn:hover{border-color:var(--muted);}
   .viewport-btn.active{background:var(--accent-dim);border-color:var(--accent);color:#fff;}
   .dim-label{
-    font:600 10.5px 'JetBrains Mono',monospace;color:#fff;
+    position:absolute;font:600 10.5px 'JetBrains Mono',monospace;color:#fff;
     background:rgba(20,19,17,0.8);padding:2px 6px;border-radius:4px;
     white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none;
   }
@@ -617,7 +617,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v1.7</div>
+    <div id="viewportVersion">v1.8</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -633,7 +633,6 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 // ---------- Scene setup ----------
 const holder = document.getElementById('canvas-holder');
@@ -649,15 +648,19 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(holder.clientWidth, holder.clientHeight);
 holder.appendChild(renderer.domElement);
 
-// Renders the dimension labels (plain HTML, always crisp/camera-facing)
-// as a second pass on top of the WebGL canvas.
-const labelRenderer = new CSS2DRenderer();
-labelRenderer.setSize(holder.clientWidth, holder.clientHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.top = '0';
-labelRenderer.domElement.style.left = '0';
-labelRenderer.domElement.style.pointerEvents = 'none';
-holder.appendChild(labelRenderer.domElement);
+// Plain HTML overlay for the dimension labels, positioned each frame by
+// hand-projecting their 3D world position to screen space - simpler and
+// more predictable here than CSS2DRenderer for a handful of static labels.
+const dimLabelsLayer = document.createElement('div');
+dimLabelsLayer.style.position = 'absolute';
+dimLabelsLayer.style.inset = '0';
+dimLabelsLayer.style.overflow = 'hidden';
+dimLabelsLayer.style.pointerEvents = 'none';
+holder.appendChild(dimLabelsLayer);
+let dimLabels = []; // { el, worldPos: THREE.Vector3 } - declared here (not down with the rest of the
+// dimension-indicator code) because animate()'s first synchronous call runs
+// before the script reaches that section, and referencing a not-yet-declared
+// `let` there throws (temporal dead zone).
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 2);
@@ -684,7 +687,6 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
-  labelRenderer.setSize(w, h);
 }
 new ResizeObserver(resize).observe(holder);
 
@@ -708,31 +710,47 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
+  updateDimLabelPositions();
 }
 animate();
 
 // ---------- Dimension indicators ----------
 let showDimensions = false;
+let lastPlateW = 0, lastPlateH = 0, lastPlateThickness = 0;
 const dimensionsGroup = new THREE.Group();
 scene.add(dimensionsGroup);
 
 function clearDimensions() {
   while (dimensionsGroup.children.length) {
     const c = dimensionsGroup.children.pop();
-    if (c.isCSS2DObject) c.element.remove();
     if (c.geometry) c.geometry.dispose();
     if (c.material) c.material.dispose();
   }
+  dimLabels.forEach((l) => l.el.remove());
+  dimLabels = [];
 }
 
 function addDimLabel(position, text) {
   const div = document.createElement('div');
   div.className = 'dim-label';
   div.textContent = text;
-  const obj = new CSS2DObject(div);
-  obj.position.copy(position);
-  dimensionsGroup.add(obj);
+  dimLabelsLayer.appendChild(div);
+  dimLabels.push({ el: div, worldPos: position.clone() });
+}
+
+// Projects each label's stored 3D position to screen space and positions
+// its HTML element there - called every frame so labels track the camera
+// as the user orbits/zooms.
+function updateDimLabelPositions() {
+  if (!dimLabels.length) return;
+  const w = holder.clientWidth, h = holder.clientHeight;
+  dimLabels.forEach(({ el, worldPos }) => {
+    const v = worldPos.clone().project(camera);
+    if (v.z < -1 || v.z > 1) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.left = ((v.x * 0.5 + 0.5) * w) + 'px';
+    el.style.top = ((-v.y * 0.5 + 0.5) * h) + 'px';
+  });
 }
 
 function addDimLine(points, color = 0xffffff) {
@@ -778,12 +796,18 @@ function buildDimensions(plateW, plateH, plateThickness) {
     new THREE.Vector3(hw, hh, 0), new THREE.Vector3(hw, hh, plateThickness),
     plateThickness
   );
+  updateDimLabelPositions();
 }
 
 document.getElementById('dimensionsToggle').addEventListener('click', (e) => {
   showDimensions = !showDimensions;
   e.currentTarget.classList.toggle('active', showDimensions);
-  scheduleRebuild();
+  // Redraw just the measurement overlay from the last-built plate size,
+  // instead of scheduleRebuild()'s full model rebuild - that would redo the
+  // (potentially slow, one-geometry-per-character) text/plate geometry for
+  // no reason, since toggling dimensions doesn't change either of those.
+  clearDimensions();
+  if (showDimensions) buildDimensions(lastPlateW, lastPlateH, lastPlateThickness);
 });
 
 // ---------- Font loading ----------
@@ -1822,6 +1846,7 @@ async function rebuild() {
 
   document.getElementById('sizeReadout').textContent = `${plateW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
 
+  lastPlateW = plateW; lastPlateH = plateH; lastPlateThickness = plateThickness;
   clearDimensions();
   if (showDimensions) buildDimensions(plateW, plateH, plateThickness);
 
