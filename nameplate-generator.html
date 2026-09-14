@@ -665,7 +665,7 @@
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v2.4</div>
+    <div id="viewportVersion">v2.7</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
@@ -1152,6 +1152,7 @@ const PRESETS = {
     plateColor: '#ffffff', textColor: '#ff2d8f',
   },
   licenseplate: {
+    text: 'MAKERLAND\nPLA 2026',
     font: 'bungee', fontSize: 18, textDepth: 1.6,
     shapeMode: 'rounded', cornerRadius: 6, autoFit: false, plateWidth: 120, plateHeight: 60,
     keyringEnabled: false, holeMode: 'top2', holeDiameter: 4, holeMargin: 7,
@@ -1163,6 +1164,12 @@ const PRESETS = {
 function applyPreset(name) {
   const p = PRESETS[name];
   if (!p) return;
+
+  // Presets don't touch the user's typed text by default (see feedback
+  // memory) - this is an opt-in exception for demo-style presets like
+  // License Plate, where "YOUR NAME" doesn't read as the thing it's
+  // supposed to show off. Only presets that explicitly set `text` do this.
+  if (p.text !== undefined) els.text.value = p.text;
 
   els.font.value = p.font;
   els.fontSize.value = p.fontSize;
