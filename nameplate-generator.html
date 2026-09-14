@@ -67,6 +67,13 @@
   }
   .about-btn:hover{border-color:var(--accent2);color:var(--accent2);}
 
+  .lang-select{
+    width:auto;background:var(--panel-2);border:1px solid var(--border);color:var(--muted);
+    border-radius:6px;padding:4px 6px;font-family:'Space Grotesk',sans-serif;font-size:11px;
+    cursor:pointer;outline:none;
+  }
+  .lang-select:hover{border-color:var(--muted);}
+
   .gh-ribbon{position:fixed;bottom:0;right:0;width:140px;height:140px;overflow:hidden;z-index:50;pointer-events:none;}
   .gh-ribbon a{
     position:absolute;top:50%;left:50%;transform:translate(-50%, -50%) rotate(-45deg);
@@ -284,24 +291,24 @@
     <div class="about-hero">
       <img src="assets/logo.svg" alt="">
       <h2>Tagify<span class="three-d">3D</span></h2>
-      <p class="tagline">A single-file, in-browser parametric generator for 3D-printable name plates, keychains, and pet tags. No install, no build step — everything runs client-side.</p>
+      <p class="tagline" data-i18n="about.tagline"></p>
     </div>
     <ul class="about-features">
-      <li>Multi-line text with per-line sizing, line &amp; letter spacing</li>
-      <li>Latin, Arabic, Hebrew, Hindi, Telugu, Japanese, Chinese, Cyrillic — or any Google Font by name</li>
-      <li>Rounded, Rectangle, Oval, or Contour base plates</li>
-      <li>Emboss, Engrave, or Die Cut text styles</li>
-      <li>Mounting holes, keychain loop, beveled edges, border text</li>
-      <li>Decorate the "i"/"j" dot — heart, star, or a custom SVG</li>
-      <li>One-click style presets to get started fast</li>
-      <li>STL export: combined, or split for multi-color printing</li>
+      <li data-i18n="about.feature.multiline"></li>
+      <li data-i18n="about.feature.scripts"></li>
+      <li data-i18n="about.feature.shapes"></li>
+      <li data-i18n="about.feature.styles"></li>
+      <li data-i18n="about.feature.hardware"></li>
+      <li data-i18n="about.feature.dot"></li>
+      <li data-i18n="about.feature.presets"></li>
+      <li data-i18n="about.feature.export"></li>
     </ul>
     <div class="about-footer">
       <div class="about-creator">
         <img src="https://github.com/doccaz.png" alt="">
-        <span>Created by <a href="https://github.com/doccaz" target="_blank" rel="noopener">Erico Mendonca</a></span>
+        <span data-i18n-html="about.createdBy">Created by <a href="https://github.com/doccaz" target="_blank" rel="noopener">Erico Mendonca</a></span>
       </div>
-      <div>Open source, MIT licensed · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">View the code on GitHub →</a></div>
+      <div data-i18n-html="about.license">Open source, MIT licensed · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">View the code on GitHub →</a></div>
     </div>
   </div>
 </div>
@@ -313,51 +320,54 @@
           <img src="assets/logo.svg" alt="Tagify3D">
           <h1>Tagify<span class="three-d">3D</span></h1>
         </div>
-        <button id="aboutBtn" class="about-btn" title="About this app">i</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <select id="langSelect" class="lang-select" data-i18n-aria="a11y.langSelect"></select>
+          <button id="aboutBtn" class="about-btn" data-i18n-title="about.buttonTitle" title="About this app">i</button>
+        </div>
       </div>
-      <p>Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.</p>
+      <p data-i18n="brand.tagline">Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.</p>
     </div>
     <div id="sidebar-scroll">
 
       <div class="section">
-        <div class="section-title">STYLE PRESETS</div>
+        <div class="section-title" data-i18n="section.presets">STYLE PRESETS</div>
         <div class="row" style="display:flex;flex-direction:column;gap:8px;">
-          <button class="btn btn-secondary preset-btn" data-preset="bubble" style="text-align:left;">🎈 Bubble Keychain — chunky pastel outline</button>
-          <button class="btn btn-secondary preset-btn" data-preset="chunkybold" style="text-align:left;">🔤 Chunky Bold — thick rounded sans, cutout tag</button>
-          <button class="btn btn-secondary preset-btn" data-preset="cursive" style="text-align:left;">✍️ Cursive Charm — script name, keyring loop</button>
-          <button class="btn btn-secondary preset-btn" data-preset="twotone" style="text-align:left;">🏷️ Classic Two-Tone — bold block letters on a plate</button>
+          <button class="btn btn-secondary preset-btn" data-preset="bubble" data-i18n="preset.bubble" style="text-align:left;">🎈 Bubble Keychain — chunky pastel outline</button>
+          <button class="btn btn-secondary preset-btn" data-preset="chunkybold" data-i18n="preset.chunkybold" style="text-align:left;">🔤 Chunky Bold — thick rounded sans, cutout tag</button>
+          <button class="btn btn-secondary preset-btn" data-preset="cursive" data-i18n="preset.cursive" style="text-align:left;">✍️ Cursive Charm — script name, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="twotone" data-i18n="preset.twotone" style="text-align:left;">🏷️ Classic Two-Tone — bold block letters on a plate</button>
         </div>
         <div id="morePresetsPanel" class="row" style="display:none;flex-direction:column;gap:8px;margin-top:8px;">
-          <button class="btn btn-secondary preset-btn" data-preset="sweetheart" style="text-align:left;">💗 Sweetheart Script — elegant pink cursive, keyring loop</button>
-          <button class="btn btn-secondary preset-btn" data-preset="bubblecursive" style="text-align:left;">💜 Bubble Cursive — bold rounded script, keyring loop</button>
-          <button class="btn btn-secondary preset-btn" data-preset="vintagemarquee" style="text-align:left;">✨ Vintage Marquee — classic gold cursive on black</button>
-          <button class="btn btn-secondary preset-btn" data-preset="bubblepop" style="text-align:left;">🎀 Bubble Pop — hot pink bold bubble letters, keyring loop</button>
-          <button class="btn btn-secondary preset-btn" data-preset="licenseplate" style="text-align:left;">🚗 License Plate — small state line + big plate number, top holes</button>
+          <button class="btn btn-secondary preset-btn" data-preset="sweetheart" data-i18n="preset.sweetheart" style="text-align:left;">💗 Sweetheart Script — elegant pink cursive, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="bubblecursive" data-i18n="preset.bubblecursive" style="text-align:left;">💜 Bubble Cursive — bold rounded script, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="vintagemarquee" data-i18n="preset.vintagemarquee" style="text-align:left;">✨ Vintage Marquee — classic gold cursive on black</button>
+          <button class="btn btn-secondary preset-btn" data-preset="bubblepop" data-i18n="preset.bubblepop" style="text-align:left;">🎀 Bubble Pop — hot pink bold bubble letters, keyring loop</button>
+          <button class="btn btn-secondary preset-btn" data-preset="licenseplate" data-i18n="preset.licenseplate" style="text-align:left;">🚗 License Plate — small state line + big plate number, top holes</button>
         </div>
-        <button id="morePresetsToggle" class="btn btn-secondary" style="margin-top:8px;font-size:12px;">Show more presets ▾</button>
+        <button id="morePresetsToggle" class="btn btn-secondary" style="margin-top:8px;font-size:12px;" data-i18n="preset.showMore">Show more presets ▾</button>
       </div>
 
       <div class="section">
-        <div class="section-title">TEXT</div>
+        <div class="section-title" data-i18n="section.text">TEXT</div>
         <div class="row">
-          <label>Text style
-            <span class="help-icon">?<span class="tip"><b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.</span></span>
+          <label><span data-i18n="field.textStyle">Text style</span>
+            <span class="help-icon">?<span class="tip" data-i18n-html="tip.textStyle"><b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.</span></span>
           </label>
           <div class="segbtns" id="textStyleButtons">
-            <button data-style="emboss" class="active">Emboss</button>
-            <button data-style="engrave">Engrave</button>
-            <button data-style="diecut">Die Cut</button>
+            <button data-style="emboss" class="active" data-i18n="style.emboss">Emboss</button>
+            <button data-style="engrave" data-i18n="style.engrave">Engrave</button>
+            <button data-style="diecut" data-i18n="style.diecut">Die Cut</button>
           </div>
         </div>
         <div class="row">
-          <label for="textInput">Content (one line per row)</label>
+          <label for="textInput" data-i18n="field.content">Content (one line per row)</label>
           <textarea id="textInput">YOUR NAME</textarea>
           <p id="glyphWarning" style="display:none;font-size:11px;color:var(--accent);margin:6px 2px 0;line-height:1.4;"></p>
         </div>
         <div class="row">
-          <label for="fontSelect">Typeface</label>
+          <label for="fontSelect" data-i18n="field.typeface">Typeface</label>
           <select id="fontSelect">
-            <optgroup label="Sans / Serif">
+            <optgroup label="Sans / Serif" data-i18n-label="fontgroup.sansSerif">
               <option value="helvetiker_regular">Helvetiker Regular</option>
               <option value="helvetiker_bold">Helvetiker Bold</option>
               <option value="optimer_regular">Optimer Regular</option>
@@ -365,7 +375,7 @@
               <option value="gentilis_regular">Gentilis Regular</option>
               <option value="gentilis_bold">Gentilis Bold</option>
             </optgroup>
-            <optgroup label="Script & Handwriting">
+            <optgroup label="Script & Handwriting" data-i18n-label="fontgroup.script">
               <option value="dancing_script">Dancing Script</option>
               <option value="great_vibes">Great Vibes</option>
               <option value="alex_brush">Alex Brush</option>
@@ -391,7 +401,7 @@
               <option value="tangerine">Tangerine</option>
               <option value="bilbo">Bilbo</option>
             </optgroup>
-            <optgroup label="Bubble & Bold">
+            <optgroup label="Bubble & Bold" data-i18n-label="fontgroup.bubble">
               <option value="fredoka">Fredoka</option>
               <option value="baloo_2">Baloo 2</option>
               <option value="bubblegum_sans">Bubblegum Sans</option>
@@ -402,7 +412,7 @@
               <option value="boogaloo">Boogaloo</option>
               <option value="nunito_extrabold">Nunito ExtraBold</option>
             </optgroup>
-            <optgroup label="Non-Latin Scripts">
+            <optgroup label="Non-Latin Scripts" data-i18n-label="fontgroup.nonLatin">
               <option value="noto_sans_arabic">Noto Sans Arabic</option>
               <option value="noto_sans_hebrew">Noto Sans Hebrew</option>
               <option value="noto_sans_devanagari">Noto Sans Devanagari (Hindi)</option>
@@ -415,35 +425,35 @@
         </div>
         <div class="row">
           <label for="customFontInput">
-            Custom Google Font (advanced)
-            <span class="help-icon">?<span class="tip">Type the exact name of any font from Google Fonts and it loads live — not just the ones in the dropdown above. Browse names at the link below, then paste one in here.</span></span>
+            <span data-i18n="field.customFont">Custom Google Font (advanced)</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.customFont">Type the exact name of any font from Google Fonts and it loads live — not just the ones in the dropdown above. Browse names at the link below, then paste one in here.</span></span>
           </label>
           <div style="display:flex;gap:8px;">
-            <input type="text" id="customFontInput" placeholder="e.g. Shadows Into Light" style="flex:1;">
-            <button id="customFontLoad" class="btn btn-secondary" style="width:auto;white-space:nowrap;padding:8px 14px;">Load</button>
+            <input type="text" id="customFontInput" placeholder="e.g. Shadows Into Light" data-i18n-placeholder="field.customFont.placeholder" style="flex:1;">
+            <button id="customFontLoad" class="btn btn-secondary" data-i18n="button.load" style="width:auto;white-space:nowrap;padding:8px 14px;">Load</button>
           </div>
           <p style="font-size:11px;margin:6px 2px 0;line-height:1.4;">
-            <a href="https://fonts.google.com" target="_blank" rel="noopener" style="color:var(--accent2);">Browse fonts on fonts.google.com →</a>
+            <a href="https://fonts.google.com" target="_blank" rel="noopener" data-i18n="link.browseFonts" style="color:var(--accent2);">Browse fonts on fonts.google.com →</a>
           </p>
           <p id="customFontStatus" style="font-size:11px;color:var(--muted);margin:4px 2px 0;line-height:1.4;"></p>
         </div>
         <div class="row">
-          <label>Text height</label>
+          <label data-i18n="field.textHeight">Text height</label>
           <div class="slidewrap">
             <input type="range" id="fontSize" min="4" max="30" step="0.5" value="12">
             <span class="val" id="fontSizeVal">12 mm</span>
           </div>
         </div>
         <div class="row" id="textDepthRow">
-          <label id="textDepthLabel">Text depth (raised height)</label>
+          <label id="textDepthLabel" data-i18n="field.textDepth">Text depth (raised height)</label>
           <div class="slidewrap">
             <input type="range" id="textDepth" min="0.4" max="6" step="0.2" value="1.2">
             <span class="val" id="textDepthVal">1.2 mm</span>
           </div>
         </div>
         <div class="row">
-          <label>Line spacing
-            <span class="help-icon">?<span class="tip">Vertical gap between lines, as a percentage of the normal spacing. Only matters with 2+ lines of text.</span></span>
+          <label><span data-i18n="field.lineSpacing">Line spacing</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.lineSpacing">Vertical gap between lines, as a percentage of the normal spacing. Only matters with 2+ lines of text.</span></span>
           </label>
           <div class="slidewrap">
             <input type="range" id="lineSpacing" min="60" max="200" step="5" value="100">
@@ -451,8 +461,8 @@
           </div>
         </div>
         <div class="row">
-          <label>Letter spacing
-            <span class="help-icon">?<span class="tip">Extra horizontal gap inserted between every pair of characters, in mm. Negative values tighten the text.</span></span>
+          <label><span data-i18n="field.letterSpacing">Letter spacing</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.letterSpacing">Extra horizontal gap inserted between every pair of characters, in mm. Negative values tighten the text.</span></span>
           </label>
           <div class="slidewrap">
             <input type="range" id="letterSpacing" min="-1.5" max="8" step="0.1" value="0">
@@ -460,106 +470,106 @@
           </div>
         </div>
         <div class="row" id="lineScalesRow" style="display:none;">
-          <label>Per-line size (% of text height)
-            <span class="help-icon">?<span class="tip">Scale each line independently — e.g. a big name on line 1 and a smaller job title or phone number below it.</span></span>
+          <label><span data-i18n="field.perLineSize">Per-line size (% of text height)</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.perLineSize">Scale each line independently — e.g. a big name on line 1 and a smaller job title or phone number below it.</span></span>
           </label>
           <div id="lineScalesList"></div>
         </div>
         <div class="row checkrow">
           <input type="checkbox" id="dotDecorEnabled">
-          <label for="dotDecorEnabled">Decorate the dot on i/j
-            <span class="help-icon">?<span class="tip">Swaps the dot above lowercase "i"/"j" for a small icon — heart, star, etc. Only works if the font actually draws the dot as its own separate shape (most do).</span></span>
+          <label for="dotDecorEnabled"><span data-i18n="field.dotDecor">Decorate the dot on i/j</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.dotDecor">Swaps the dot above lowercase "i"/"j" for a small icon — heart, star, etc. Only works if the font actually draws the dot as its own separate shape (most do).</span></span>
           </label>
         </div>
         <div class="row row-split" id="dotDecorRow" style="display:none;">
           <div>
-            <label>Icon</label>
+            <label data-i18n="field.icon">Icon</label>
             <select id="dotDecorIcon">
-              <option value="heart">Heart</option>
-              <option value="star">Star</option>
-              <option value="crown">Crown</option>
-              <option value="diamond">Diamond</option>
-              <option value="flower">Flower</option>
-              <option value="paw">Paw print</option>
-              <option value="custom">Custom SVG…</option>
+              <option value="heart" data-i18n-option="icon.heart">Heart</option>
+              <option value="star" data-i18n-option="icon.star">Star</option>
+              <option value="crown" data-i18n-option="icon.crown">Crown</option>
+              <option value="diamond" data-i18n-option="icon.diamond">Diamond</option>
+              <option value="flower" data-i18n-option="icon.flower">Flower</option>
+              <option value="paw" data-i18n-option="icon.paw">Paw print</option>
+              <option value="custom" data-i18n-option="icon.custom">Custom SVG…</option>
             </select>
           </div>
         </div>
         <div class="row" id="dotDecorCustomRow" style="display:none;">
-          <label for="dotDecorCustomSvg">Custom SVG path
-            <span class="help-icon">?<span class="tip">Paste an SVG "d" path string (or a full &lt;path d="..."/&gt; tag), viewBox roughly 0-24. Any shape works — trace one on a site like svg-path-editor.com if you don't have one handy.</span></span>
+          <label for="dotDecorCustomSvg"><span data-i18n="field.customSvg">Custom SVG path</span>
+            <span class="help-icon">?<span class="tip" data-i18n-html="tip.customSvg">Paste an SVG "d" path string (or a full &lt;path d="..."/&gt; tag), viewBox roughly 0-24. Any shape works — trace one on a site like svg-path-editor.com if you don't have one handy.</span></span>
           </label>
           <input type="text" id="dotDecorCustomSvg" placeholder='e.g. M12,2 L14.9,8.6 L22,9.2 ...'>
         </div>
         <div class="row row-split" id="alignRow">
           <div class="checkrow">
             <input type="checkbox" id="centerH" checked>
-            <label for="centerH">Center horizontally</label>
+            <label for="centerH" data-i18n="field.centerH">Center horizontally</label>
           </div>
           <div class="checkrow">
             <input type="checkbox" id="centerV" checked>
-            <label for="centerV">Center vertically</label>
+            <label for="centerV" data-i18n="field.centerV">Center vertically</label>
           </div>
         </div>
         <div class="row row-split" id="offsetsRow">
           <div id="offsetXRow" style="display:none;">
-            <label>Horizontal offset (+right)</label>
+            <label data-i18n="field.offsetX">Horizontal offset (+right)</label>
             <div class="numfield"><input type="number" id="offsetX" value="0" step="1"><span class="unit">mm</span></div>
           </div>
           <div id="offsetYRow" style="display:none;">
-            <label>Vertical offset (+up)</label>
+            <label data-i18n="field.offsetY">Vertical offset (+up)</label>
             <div class="numfield"><input type="number" id="offsetY" value="0" step="1"><span class="unit">mm</span></div>
           </div>
         </div>
       </div>
 
       <div class="section" id="borderTextSection">
-        <div class="section-title">BORDER TEXT</div>
+        <div class="section-title" data-i18n="section.borderText">BORDER TEXT</div>
         <div class="row">
-          <label for="topText">Top line (optional)</label>
-          <input type="text" id="topText" placeholder="e.g. HELLO, MY NAME IS">
+          <label for="topText" data-i18n="field.topLine">Top line (optional)</label>
+          <input type="text" id="topText" placeholder="e.g. HELLO, MY NAME IS" data-i18n-placeholder="field.topLine.placeholder">
         </div>
         <div class="row">
-          <label for="bottomText">Bottom line (optional)</label>
-          <input type="text" id="bottomText" placeholder="e.g. est. 2024">
+          <label for="bottomText" data-i18n="field.bottomLine">Bottom line (optional)</label>
+          <input type="text" id="bottomText" placeholder="e.g. est. 2024" data-i18n-placeholder="field.bottomLine.placeholder">
         </div>
         <div class="row">
-          <label>Border text height</label>
+          <label data-i18n="field.borderTextHeight">Border text height</label>
           <div class="slidewrap">
             <input type="range" id="borderTextSize" min="2" max="10" step="0.5" value="4">
             <span class="val" id="borderTextSizeVal">4 mm</span>
           </div>
         </div>
         <div class="row">
-          <label>Border text depth (raised height)</label>
+          <label data-i18n="field.borderTextDepth">Border text depth (raised height)</label>
           <div class="slidewrap">
             <input type="range" id="borderTextDepth" min="0.4" max="6" step="0.2" value="1.2">
             <span class="val" id="borderTextDepthVal">1.2 mm</span>
           </div>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin:0;line-height:1.5;">Not available in Contour mode - that shape is fully defined by the main text.</p>
+        <p style="font-size:11px;color:var(--muted);margin:0;line-height:1.5;" data-i18n="hint.borderTextContour">Not available in Contour mode - that shape is fully defined by the main text.</p>
       </div>
 
       <div class="section">
-        <div class="section-title">BASE PLATE</div>
+        <div class="section-title" data-i18n="section.basePlate">BASE PLATE</div>
         <div class="row">
-          <label>Shape</label>
+          <label data-i18n="field.shape">Shape</label>
           <div class="segbtns" id="shapeButtons">
-            <button data-shape="rounded" class="active">Rounded</button>
-            <button data-shape="rect">Rectangle</button>
-            <button data-shape="oval">Oval</button>
-            <button data-shape="contour">Contour</button>
+            <button data-shape="rounded" class="active" data-i18n="shape.rounded">Rounded</button>
+            <button data-shape="rect" data-i18n="shape.rect">Rectangle</button>
+            <button data-shape="oval" data-i18n="shape.oval">Oval</button>
+            <button data-shape="contour" data-i18n="shape.contour">Contour</button>
           </div>
         </div>
         <div class="row checkrow" id="autoFitRow">
           <input type="checkbox" id="autoFit" checked>
-          <label for="autoFit">Auto-fit plate to text
-            <span class="help-icon">?<span class="tip">Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.</span></span>
+          <label for="autoFit"><span data-i18n="field.autoFit">Auto-fit plate to text</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.autoFit">Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.</span></span>
           </label>
         </div>
         <div class="row" id="contourMarginRow" style="display:none;">
-          <label>Margin around letters
-            <span class="help-icon">?<span class="tip">How far the outline grows past the letters in Contour mode — a small margin hugs the text tightly, a larger one leaves more of a border.</span></span>
+          <label><span data-i18n="field.contourMargin">Margin around letters</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.contourMargin">How far the outline grows past the letters in Contour mode — a small margin hugs the text tightly, a larger one leaves more of a border.</span></span>
           </label>
           <div class="slidewrap">
             <input type="range" id="contourMargin" min="1" max="20" step="0.5" value="4">
@@ -568,12 +578,12 @@
         </div>
         <div class="row checkrow" id="contourConnectRow" style="display:none;">
           <input type="checkbox" id="contourConnect" checked>
-          <label for="contourConnect">Keep letters connected (bridge separated parts)
-            <span class="help-icon">?<span class="tip">Letters/words that would end up as separate floating pieces (e.g. an "i" or a dot) get linked with thin bridges so the plate prints as one piece.</span></span>
+          <label for="contourConnect"><span data-i18n="field.contourConnect">Keep letters connected (bridge separated parts)</span>
+            <span class="help-icon">?<span class="tip" data-i18n-html="tip.contourConnect">Letters/words that would end up as separate floating pieces (e.g. an "i" or a dot) get linked with thin bridges so the plate prints as one piece.</span></span>
           </label>
         </div>
         <div class="row" id="paddingRow">
-          <label>Padding around text</label>
+          <label data-i18n="field.padding">Padding around text</label>
           <div class="slidewrap">
             <input type="range" id="padding" min="2" max="30" step="1" value="10">
             <span class="val" id="paddingVal">10 mm</span>
@@ -581,23 +591,23 @@
         </div>
         <div class="row row-split" id="manualSizeRow" style="display:none;">
           <div>
-            <label>Width</label>
+            <label data-i18n="field.width">Width</label>
             <div class="numfield"><input type="number" id="plateWidth" value="100"><span class="unit">mm</span></div>
           </div>
           <div>
-            <label>Height</label>
+            <label data-i18n="field.height">Height</label>
             <div class="numfield"><input type="number" id="plateHeight" value="40"><span class="unit">mm</span></div>
           </div>
         </div>
         <div class="row" id="cornerRow">
-          <label>Corner radius</label>
+          <label data-i18n="field.cornerRadius">Corner radius</label>
           <div class="slidewrap">
             <input type="range" id="cornerRadius" min="0" max="20" step="0.5" value="6">
             <span class="val" id="cornerRadiusVal">6 mm</span>
           </div>
         </div>
         <div class="row">
-          <label>Plate thickness</label>
+          <label data-i18n="field.plateThickness">Plate thickness</label>
           <div class="slidewrap">
             <input type="range" id="plateThickness" min="1" max="10" step="0.5" value="3">
             <span class="val" id="plateThicknessVal">3 mm</span>
@@ -605,66 +615,66 @@
         </div>
         <div class="row checkrow">
           <input type="checkbox" id="bevelEnabled">
-          <label for="bevelEnabled">Beveled edges (plate + text)
-            <span class="help-icon">?<span class="tip">Chamfers the outer edges of the plate and text instead of leaving them sharp square-cut — softer look, and no supports needed for the top edge.</span></span>
+          <label for="bevelEnabled"><span data-i18n="field.bevel">Beveled edges (plate + text)</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.bevel">Chamfers the outer edges of the plate and text instead of leaving them sharp square-cut — softer look, and no supports needed for the top edge.</span></span>
           </label>
         </div>
         <div class="row" id="bevelSizeRow" style="display:none;">
-          <label>Bevel size</label>
+          <label data-i18n="field.bevelSize">Bevel size</label>
           <div class="slidewrap">
             <input type="range" id="bevelSize" min="0.2" max="2" step="0.1" value="0.5">
             <span class="val" id="bevelSizeVal">0.5 mm</span>
           </div>
         </div>
-        <div class="readout"><span>Computed size</span><b id="sizeReadout">— × — mm</b></div>
+        <div class="readout"><span data-i18n="field.computedSize">Computed size</span><b id="sizeReadout">— × — mm</b></div>
       </div>
 
       <div class="section" id="holesSection">
-        <div class="section-title">MOUNTING HOLES</div>
+        <div class="section-title" data-i18n="section.holes">MOUNTING HOLES</div>
         <div class="row">
-          <label>Layout</label>
+          <label data-i18n="field.layout">Layout</label>
           <div class="segbtns" id="holeButtons">
-            <button data-holes="none" class="active">None</button>
-            <button data-holes="1">1 · end</button>
-            <button data-holes="2">2 · sides</button>
-            <button data-holes="top2">2 · top</button>
-            <button data-holes="4">4 · corners</button>
+            <button data-holes="none" class="active" data-i18n="holes.none">None</button>
+            <button data-holes="1" data-i18n="holes.1">1 · end</button>
+            <button data-holes="2" data-i18n="holes.2">2 · sides</button>
+            <button data-holes="top2" data-i18n="holes.top2">2 · top</button>
+            <button data-holes="4" data-i18n="holes.4">4 · corners</button>
           </div>
         </div>
         <div class="row row-split" id="holeParamsRow" style="display:none;">
           <div>
-            <label>Hole diameter</label>
+            <label data-i18n="field.holeDiameter">Hole diameter</label>
             <div class="numfield"><input type="number" id="holeDiameter" value="4" step="0.5"><span class="unit">mm</span></div>
           </div>
           <div>
-            <label>Edge margin</label>
+            <label data-i18n="field.edgeMargin">Edge margin</label>
             <div class="numfield"><input type="number" id="holeMargin" value="7" step="0.5"><span class="unit">mm</span></div>
           </div>
         </div>
       </div>
 
       <div class="section" id="keyringSection">
-        <div class="section-title">KEYRING LOOP</div>
+        <div class="section-title" data-i18n="section.keyring">KEYRING LOOP</div>
         <div class="row checkrow">
           <input type="checkbox" id="keyringEnabled">
-          <label for="keyringEnabled">Add a loop + hole, keychain-style</label>
+          <label for="keyringEnabled" data-i18n="field.keyringEnabled">Add a loop + hole, keychain-style</label>
         </div>
         <div id="keyringParams" style="display:none;">
           <div class="row">
-            <label>Position</label>
+            <label data-i18n="field.position">Position</label>
             <div class="segbtns" id="keyringSideButtons">
-              <button data-side="left" class="active">Left end</button>
-              <button data-side="right">Right end</button>
-              <button data-side="both">Both ends</button>
+              <button data-side="left" class="active" data-i18n="keyring.left">Left end</button>
+              <button data-side="right" data-i18n="keyring.right">Right end</button>
+              <button data-side="both" data-i18n="keyring.both">Both ends</button>
             </div>
           </div>
           <div class="row row-split">
             <div>
-              <label>Hole diameter</label>
+              <label data-i18n="field.holeDiameter">Hole diameter</label>
               <div class="numfield"><input type="number" id="keyringHoleDiameter" value="8" step="0.5"><span class="unit">mm</span></div>
             </div>
             <div>
-              <label>Loop diameter</label>
+              <label data-i18n="field.loopDiameter">Loop diameter</label>
               <div class="numfield"><input type="number" id="keyringTabSize" value="12" step="0.5"><span class="unit">mm</span></div>
             </div>
           </div>
@@ -672,22 +682,22 @@
       </div>
 
       <div class="section">
-        <div class="section-title">PREVIEW COLORS</div>
+        <div class="section-title" data-i18n="section.colors">PREVIEW COLORS</div>
         <div class="row colorrow">
           <input type="color" id="plateColor" value="#d8d3c8">
-          <span>Plate</span>
+          <span data-i18n="field.plate">Plate</span>
         </div>
         <div class="row colorrow" id="textColorRow">
           <input type="color" id="textColor" value="#e8672f">
-          <span>Text</span>
+          <span data-i18n="field.text">Text</span>
         </div>
       </div>
 
     </div>
     <div id="export-bar">
-      <button class="btn btn-primary" id="exportCombined">Download STL (combined)</button>
-      <button class="btn btn-secondary" id="exportSeparate">Download STL (body + text, 2 files)</button>
-      <p style="font-size:11px;color:var(--muted);margin:2px 2px 0 2px;line-height:1.5;">
+      <button class="btn btn-primary" id="exportCombined" data-i18n="button.exportCombined">Download STL (combined)</button>
+      <button class="btn btn-secondary" id="exportSeparate" data-i18n="button.exportSeparate">Download STL (body + text, 2 files)</button>
+      <p style="font-size:11px;color:var(--muted);margin:2px 2px 0 2px;line-height:1.5;" data-i18n="hint.exportMultiColor">
         For AMS/multi-color: import both files into your slicer in the same step
         (don't auto-arrange), then assign a separate filament to each — they share
         the same origin so they'll line up automatically.
@@ -697,14 +707,14 @@
 
   <div id="viewport">
     <div id="canvas-holder"></div>
-    <div id="hint">drag to orbit · scroll to zoom</div>
-    <div id="renderStatus"><span class="spinner"></span>Rendering…</div>
-    <div id="viewportVersion">v2.9</div>
+    <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
+    <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
+    <div id="viewportVersion">v2.10</div>
     <div id="viewportToolbar">
-      <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
-      <button id="resetViewBtn" class="viewport-btn">Reset view</button>
+      <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
+      <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
     </div>
-    <div id="loading">loading fonts…</div>
+    <div id="loading" data-i18n="viewport.loading">loading fonts…</div>
   </div>
 </div>
 
@@ -716,6 +726,485 @@ import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+
+// ---------- i18n ----------
+const TRANSLATIONS = {
+  en: {
+    'a11y.langSelect': 'Interface language',
+    'about.buttonTitle': 'About this app',
+    'about.close': 'Close',
+    'about.tagline': 'A single-file, in-browser parametric generator for 3D-printable name plates, keychains, and pet tags. No install, no build step — everything runs client-side.',
+    'about.feature.multiline': 'Multi-line text with per-line sizing, line & letter spacing',
+    'about.feature.scripts': 'Latin, Arabic, Hebrew, Hindi, Telugu, Japanese, Chinese, Cyrillic — or any Google Font by name',
+    'about.feature.shapes': 'Rounded, Rectangle, Oval, or Contour base plates',
+    'about.feature.styles': 'Emboss, Engrave, or Die Cut text styles',
+    'about.feature.hardware': 'Mounting holes, keychain loop, beveled edges, border text',
+    'about.feature.dot': 'Decorate the "i"/"j" dot — heart, star, or a custom SVG',
+    'about.feature.presets': 'One-click style presets to get started fast',
+    'about.feature.export': 'STL export: combined, or split for multi-color printing',
+    'about.createdBy': 'Created by <a href="https://github.com/doccaz" target="_blank" rel="noopener">Erico Mendonca</a>',
+    'about.license': 'Open source, MIT licensed · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">View the code on GitHub →</a>',
+    'brand.tagline': 'Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.',
+    'section.presets': 'STYLE PRESETS',
+    'section.text': 'TEXT',
+    'section.borderText': 'BORDER TEXT',
+    'section.basePlate': 'BASE PLATE',
+    'section.holes': 'MOUNTING HOLES',
+    'section.keyring': 'KEYRING LOOP',
+    'section.colors': 'PREVIEW COLORS',
+    'preset.bubble': '🎈 Bubble Keychain — chunky pastel outline',
+    'preset.chunkybold': '🔤 Chunky Bold — thick rounded sans, cutout tag',
+    'preset.cursive': '✍️ Cursive Charm — script name, keyring loop',
+    'preset.twotone': '🏷️ Classic Two-Tone — bold block letters on a plate',
+    'preset.sweetheart': '💗 Sweetheart Script — elegant pink cursive, keyring loop',
+    'preset.bubblecursive': '💜 Bubble Cursive — bold rounded script, keyring loop',
+    'preset.vintagemarquee': '✨ Vintage Marquee — classic gold cursive on black',
+    'preset.bubblepop': '🎀 Bubble Pop — hot pink bold bubble letters, keyring loop',
+    'preset.licenseplate': '🚗 License Plate — small state line + big plate number, top holes',
+    'preset.showMore': 'Show more presets ▾',
+    'preset.showFewer': 'Show fewer presets ▴',
+    'field.textStyle': 'Text style',
+    'tip.textStyle': '<b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.',
+    'style.emboss': 'Emboss',
+    'style.engrave': 'Engrave',
+    'style.diecut': 'Die Cut',
+    'field.content': 'Content (one line per row)',
+    'field.typeface': 'Typeface',
+    'fontgroup.sansSerif': 'Sans / Serif',
+    'fontgroup.script': 'Script & Handwriting',
+    'fontgroup.bubble': 'Bubble & Bold',
+    'fontgroup.nonLatin': 'Non-Latin Scripts',
+    'field.customFont': 'Custom Google Font (advanced)',
+    'tip.customFont': 'Type the exact name of any font from Google Fonts and it loads live — not just the ones in the dropdown above. Browse names at the link below, then paste one in here.',
+    'field.customFont.placeholder': 'e.g. Shadows Into Light',
+    'button.load': 'Load',
+    'link.browseFonts': 'Browse fonts on fonts.google.com →',
+    'field.textHeight': 'Text height',
+    'field.textDepth': 'Text depth (raised height)',
+    'field.textDepthEngrave': 'Engrave depth',
+    'field.lineSpacing': 'Line spacing',
+    'tip.lineSpacing': 'Vertical gap between lines, as a percentage of the normal spacing. Only matters with 2+ lines of text.',
+    'field.letterSpacing': 'Letter spacing',
+    'tip.letterSpacing': 'Extra horizontal gap inserted between every pair of characters, in mm. Negative values tighten the text.',
+    'field.perLineSize': 'Per-line size (% of text height)',
+    'tip.perLineSize': 'Scale each line independently — e.g. a big name on line 1 and a smaller job title or phone number below it.',
+    'field.dotDecor': 'Decorate the dot on i/j',
+    'tip.dotDecor': 'Swaps the dot above lowercase "i"/"j" for a small icon — heart, star, etc. Only works if the font actually draws the dot as its own separate shape (most do).',
+    'field.icon': 'Icon',
+    'icon.heart': 'Heart',
+    'icon.star': 'Star',
+    'icon.crown': 'Crown',
+    'icon.diamond': 'Diamond',
+    'icon.flower': 'Flower',
+    'icon.paw': 'Paw print',
+    'icon.custom': 'Custom SVG…',
+    'field.customSvg': 'Custom SVG path',
+    'tip.customSvg': 'Paste an SVG "d" path string (or a full &lt;path d="..."/&gt; tag), viewBox roughly 0-24. Any shape works — trace one on a site like svg-path-editor.com if you don\'t have one handy.',
+    'field.centerH': 'Center horizontally',
+    'field.centerV': 'Center vertically',
+    'field.offsetX': 'Horizontal offset (+right)',
+    'field.offsetY': 'Vertical offset (+up)',
+    'field.topLine': 'Top line (optional)',
+    'field.topLine.placeholder': 'e.g. HELLO, MY NAME IS',
+    'field.bottomLine': 'Bottom line (optional)',
+    'field.bottomLine.placeholder': 'e.g. est. 2024',
+    'field.borderTextHeight': 'Border text height',
+    'field.borderTextDepth': 'Border text depth (raised height)',
+    'hint.borderTextContour': 'Not available in Contour mode - that shape is fully defined by the main text.',
+    'field.shape': 'Shape',
+    'shape.rounded': 'Rounded',
+    'shape.rect': 'Rectangle',
+    'shape.oval': 'Oval',
+    'shape.contour': 'Contour',
+    'field.autoFit': 'Auto-fit plate to text',
+    'tip.autoFit': 'Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.',
+    'field.contourMargin': 'Margin around letters',
+    'tip.contourMargin': 'How far the outline grows past the letters in Contour mode — a small margin hugs the text tightly, a larger one leaves more of a border.',
+    'field.contourConnect': 'Keep letters connected (bridge separated parts)',
+    'tip.contourConnect': 'Letters/words that would end up as separate floating pieces (e.g. an "i" or a dot) get linked with thin bridges so the plate prints as one piece.',
+    'field.padding': 'Padding around text',
+    'field.width': 'Width',
+    'field.height': 'Height',
+    'field.cornerRadius': 'Corner radius',
+    'field.plateThickness': 'Plate thickness',
+    'field.bevel': 'Beveled edges (plate + text)',
+    'tip.bevel': 'Chamfers the outer edges of the plate and text instead of leaving them sharp square-cut — softer look, and no supports needed for the top edge.',
+    'field.bevelSize': 'Bevel size',
+    'field.computedSize': 'Computed size',
+    'field.layout': 'Layout',
+    'holes.none': 'None',
+    'holes.1': '1 · end',
+    'holes.2': '2 · sides',
+    'holes.top2': '2 · top',
+    'holes.4': '4 · corners',
+    'field.holeDiameter': 'Hole diameter',
+    'field.edgeMargin': 'Edge margin',
+    'field.keyringEnabled': 'Add a loop + hole, keychain-style',
+    'field.position': 'Position',
+    'keyring.left': 'Left end',
+    'keyring.right': 'Right end',
+    'keyring.both': 'Both ends',
+    'field.loopDiameter': 'Loop diameter',
+    'field.plate': 'Plate',
+    'field.text': 'Text',
+    'button.exportCombined': 'Download STL (combined)',
+    'button.exportSeparate': 'Download STL (body + text, 2 files)',
+    'hint.exportMultiColor': "For AMS/multi-color: import both files into your slicer in the same step (don't auto-arrange), then assign a separate filament to each — they share the same origin so they'll line up automatically.",
+    'viewport.hint': 'drag to orbit · scroll to zoom',
+    'viewport.rendering': 'Rendering…',
+    'viewport.dimensions': '📏 Dimensions',
+    'viewport.dimensionsTitle': 'Show width, height, and thickness measurement lines on the model',
+    'viewport.resetView': 'Reset view',
+    'viewport.loading': 'loading fonts…',
+    'warning.missingGlyph': '⚠ "{font}" has no glyph for: {chars} — those characters will be blank. Try another font.',
+    'status.customFont.empty': 'Enter a font name first.',
+    'status.customFont.alreadyLoaded': 'Already loaded — switched to "{name}".',
+    'status.customFont.looking': 'Looking up "{name}" on Google Fonts…',
+    'status.customFont.loaded': 'Loaded "{name}" ✓',
+    'status.customFont.notFound': 'Couldn\'t find "{name}" — try the exact Google Fonts name (e.g. "Shadows Into Light").',
+    'lang.en': 'English',
+    'lang.pt-BR': 'Português (BR)',
+    'lang.es-ES': 'Español',
+  },
+  'pt-BR': {
+    'a11y.langSelect': 'Idioma da interface',
+    'about.buttonTitle': 'Sobre este app',
+    'about.close': 'Fechar',
+    'about.tagline': 'Um gerador paramétrico, de arquivo único, direto no navegador, para placas de nome, chaveiros e plaquinhas de pet prontos para impressão 3D. Sem instalação, sem build — tudo roda no seu navegador.',
+    'about.feature.multiline': 'Texto em várias linhas, com tamanho, espaçamento entre linhas e entre letras ajustáveis individualmente',
+    'about.feature.scripts': 'Latino, árabe, hebraico, hindi, telugo, japonês, chinês, cirílico — ou qualquer fonte do Google Fonts pelo nome',
+    'about.feature.shapes': 'Placas base Arredondada, Retângulo, Oval ou Contorno',
+    'about.feature.styles': 'Estilos de texto Relevo, Gravado ou Vazado (corte total)',
+    'about.feature.hardware': 'Furos de fixação, argola de chaveiro, bordas chanfradas, texto de borda',
+    'about.feature.dot': 'Personalize o pontinho do "i"/"j" — coração, estrela ou um SVG próprio',
+    'about.feature.presets': 'Estilos prontos com um clique para começar rápido',
+    'about.feature.export': 'Exportação STL: arquivo único, ou dividido para impressão multicolor',
+    'about.createdBy': 'Criado por <a href="https://github.com/doccaz" target="_blank" rel="noopener">Erico Mendonca</a>',
+    'about.license': 'Código aberto, licença MIT · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Ver o código no GitHub →</a>',
+    'brand.tagline': 'Crie uma placa de nome, chaveiro ou plaquinha de pet paramétrica e exporte pronta para imprimir — direto no seu navegador, sem instalar nada.',
+    'section.presets': 'ESTILOS PRONTOS',
+    'section.text': 'TEXTO',
+    'section.borderText': 'TEXTO DE BORDA',
+    'section.basePlate': 'PLACA BASE',
+    'section.holes': 'FUROS DE FIXAÇÃO',
+    'section.keyring': 'ARGOLA DE CHAVEIRO',
+    'section.colors': 'CORES DA PRÉVIA',
+    'preset.bubble': '🎈 Chaveiro Bolha — contorno grosso em tons pastel',
+    'preset.chunkybold': '🔤 Negrito Arredondado — sans grosso e arredondado, placa vazada',
+    'preset.cursive': '✍️ Charme Cursivo — nome em script, argola de chaveiro',
+    'preset.twotone': '🏷️ Clássico Bicolor — letras em bloco sobre uma placa',
+    'preset.sweetheart': '💗 Script Coração — cursivo rosa elegante, argola de chaveiro',
+    'preset.bubblecursive': '💜 Cursivo Bolha — script arredondado e grosso, argola de chaveiro',
+    'preset.vintagemarquee': '✨ Marquise Vintage — cursivo dourado clássico sobre preto',
+    'preset.bubblepop': '🎀 Bolha Pop — letras bolha grossas rosa-choque, argola de chaveiro',
+    'preset.licenseplate': '🚗 Placa de Carro — linha pequena de estado + número grande, furos no topo',
+    'preset.showMore': 'Ver mais estilos ▾',
+    'preset.showFewer': 'Ver menos estilos ▴',
+    'field.textStyle': 'Estilo do texto',
+    'tip.textStyle': '<b>Relevo:</b> texto elevado sobre a placa, em cor própria. <b>Gravado:</b> texto recuado na placa como um rebaixo, material único. <b>Vazado:</b> texto cortado por completo na placa, como furos abertos.',
+    'style.emboss': 'Relevo',
+    'style.engrave': 'Gravado',
+    'style.diecut': 'Vazado',
+    'field.content': 'Conteúdo (uma linha por linha)',
+    'field.typeface': 'Fonte',
+    'fontgroup.sansSerif': 'Sans / Serifada',
+    'fontgroup.script': 'Script & Manuscrita',
+    'fontgroup.bubble': 'Bolha & Negrito',
+    'fontgroup.nonLatin': 'Alfabetos não latinos',
+    'field.customFont': 'Fonte personalizada do Google (avançado)',
+    'tip.customFont': 'Digite o nome exato de qualquer fonte do Google Fonts e ela carrega na hora — não só as do menu acima. Procure nomes no link abaixo e cole aqui.',
+    'field.customFont.placeholder': 'ex.: Shadows Into Light',
+    'button.load': 'Carregar',
+    'link.browseFonts': 'Ver fontes em fonts.google.com →',
+    'field.textHeight': 'Altura do texto',
+    'field.textDepth': 'Profundidade do texto (altura do relevo)',
+    'field.textDepthEngrave': 'Profundidade da gravação',
+    'field.lineSpacing': 'Espaçamento entre linhas',
+    'tip.lineSpacing': 'Espaço vertical entre linhas, como porcentagem do espaçamento normal. Só importa com 2+ linhas de texto.',
+    'field.letterSpacing': 'Espaçamento entre letras',
+    'tip.letterSpacing': 'Espaço horizontal extra inserido entre cada par de caracteres, em mm. Valores negativos aproximam o texto.',
+    'field.perLineSize': 'Tamanho por linha (% da altura do texto)',
+    'tip.perLineSize': 'Ajuste a escala de cada linha de forma independente — por exemplo, um nome grande na linha 1 e um cargo ou telefone menor abaixo.',
+    'field.dotDecor': 'Personalizar o pontinho do i/j',
+    'tip.dotDecor': 'Troca o pontinho acima do "i"/"j" minúsculo por um ícone pequeno — coração, estrela etc. Só funciona se a fonte desenhar o pontinho como uma forma separada (a maioria desenha).',
+    'field.icon': 'Ícone',
+    'icon.heart': 'Coração',
+    'icon.star': 'Estrela',
+    'icon.crown': 'Coroa',
+    'icon.diamond': 'Diamante',
+    'icon.flower': 'Flor',
+    'icon.paw': 'Pata',
+    'icon.custom': 'SVG personalizado…',
+    'field.customSvg': 'Caminho SVG personalizado',
+    'tip.customSvg': 'Cole uma string de caminho "d" de SVG (ou uma tag completa &lt;path d="..."/&gt;), viewBox de aproximadamente 0-24. Qualquer forma funciona — trace uma em um site como svg-path-editor.com se não tiver uma à mão.',
+    'field.centerH': 'Centralizar horizontalmente',
+    'field.centerV': 'Centralizar verticalmente',
+    'field.offsetX': 'Deslocamento horizontal (+direita)',
+    'field.offsetY': 'Deslocamento vertical (+cima)',
+    'field.topLine': 'Linha superior (opcional)',
+    'field.topLine.placeholder': 'ex.: OLÁ, MEU NOME É',
+    'field.bottomLine': 'Linha inferior (opcional)',
+    'field.bottomLine.placeholder': 'ex.: desde 2024',
+    'field.borderTextHeight': 'Altura do texto de borda',
+    'field.borderTextDepth': 'Profundidade do texto de borda (altura do relevo)',
+    'hint.borderTextContour': 'Não disponível no modo Contorno - essa forma é totalmente definida pelo texto principal.',
+    'field.shape': 'Formato',
+    'shape.rounded': 'Arredondado',
+    'shape.rect': 'Retângulo',
+    'shape.oval': 'Oval',
+    'shape.contour': 'Contorno',
+    'field.autoFit': 'Ajustar placa ao texto automaticamente',
+    'tip.autoFit': 'A largura/altura da placa são calculadas a partir do texto automaticamente. Desative para definir dimensões exatas abaixo.',
+    'field.contourMargin': 'Margem ao redor das letras',
+    'tip.contourMargin': 'O quanto o contorno cresce além das letras no modo Contorno — uma margem pequena abraça o texto de perto, uma maior deixa mais borda.',
+    'field.contourConnect': 'Manter as letras conectadas (unir partes separadas)',
+    'tip.contourConnect': 'Letras/palavras que ficariam como pedaços soltos (ex.: um "i" ou um pontinho) são unidas com pontes finas para a placa imprimir como uma peça só.',
+    'field.padding': 'Espaçamento ao redor do texto',
+    'field.width': 'Largura',
+    'field.height': 'Altura',
+    'field.cornerRadius': 'Raio dos cantos',
+    'field.plateThickness': 'Espessura da placa',
+    'field.bevel': 'Bordas chanfradas (placa + texto)',
+    'tip.bevel': 'Chanfra as bordas externas da placa e do texto em vez de deixá-las retas — visual mais suave, e sem precisar de suporte na borda superior.',
+    'field.bevelSize': 'Tamanho do chanfro',
+    'field.computedSize': 'Tamanho calculado',
+    'field.layout': 'Disposição',
+    'holes.none': 'Nenhum',
+    'holes.1': '1 · ponta',
+    'holes.2': '2 · laterais',
+    'holes.top2': '2 · topo',
+    'holes.4': '4 · cantos',
+    'field.holeDiameter': 'Diâmetro do furo',
+    'field.edgeMargin': 'Margem da borda',
+    'field.keyringEnabled': 'Adicionar argola + furo, estilo chaveiro',
+    'field.position': 'Posição',
+    'keyring.left': 'Ponta esquerda',
+    'keyring.right': 'Ponta direita',
+    'keyring.both': 'Ambas as pontas',
+    'field.loopDiameter': 'Diâmetro da argola',
+    'field.plate': 'Placa',
+    'field.text': 'Texto',
+    'button.exportCombined': 'Baixar STL (combinado)',
+    'button.exportSeparate': 'Baixar STL (corpo + texto, 2 arquivos)',
+    'hint.exportMultiColor': 'Para AMS/multicolor: importe os dois arquivos no fatiador na mesma etapa (sem auto-organizar) e atribua um filamento diferente para cada um — eles compartilham a mesma origem, então vão se alinhar automaticamente.',
+    'viewport.hint': 'arraste para girar · role para dar zoom',
+    'viewport.rendering': 'Renderizando…',
+    'viewport.dimensions': '📏 Dimensões',
+    'viewport.dimensionsTitle': 'Mostra linhas de medição de largura, altura e espessura no modelo',
+    'viewport.resetView': 'Redefinir vista',
+    'viewport.loading': 'carregando fontes…',
+    'warning.missingGlyph': '⚠ "{font}" não tem glifo para: {chars} — esses caracteres ficarão em branco. Tente outra fonte.',
+    'status.customFont.empty': 'Digite um nome de fonte primeiro.',
+    'status.customFont.alreadyLoaded': 'Já carregada — mudou para "{name}".',
+    'status.customFont.looking': 'Procurando "{name}" no Google Fonts…',
+    'status.customFont.loaded': 'Carregada "{name}" ✓',
+    'status.customFont.notFound': 'Não foi possível encontrar "{name}" — tente o nome exato do Google Fonts (ex.: "Shadows Into Light").',
+    'lang.en': 'English',
+    'lang.pt-BR': 'Português (BR)',
+    'lang.es-ES': 'Español',
+  },
+  'es-ES': {
+    'a11y.langSelect': 'Idioma de la interfaz',
+    'about.buttonTitle': 'Acerca de esta app',
+    'about.close': 'Cerrar',
+    'about.tagline': 'Un generador paramétrico de archivo único, directo en el navegador, para placas de nombre, llaveros y placas de mascota listas para imprimir en 3D. Sin instalación, sin compilación — todo se ejecuta en tu navegador.',
+    'about.feature.multiline': 'Texto multilínea con tamaño, espaciado entre líneas y entre letras ajustables por línea',
+    'about.feature.scripts': 'Latino, árabe, hebreo, hindi, telugu, japonés, chino, cirílico — o cualquier fuente de Google Fonts por nombre',
+    'about.feature.shapes': 'Placas base Redondeada, Rectángulo, Óvalo o Contorno',
+    'about.feature.styles': 'Estilos de texto Relieve, Grabado o Corte total',
+    'about.feature.hardware': 'Orificios de montaje, argolla de llavero, bordes biselados, texto de borde',
+    'about.feature.dot': 'Personaliza el punto de la "i"/"j" — corazón, estrella o un SVG propio',
+    'about.feature.presets': 'Estilos predefinidos con un clic para empezar rápido',
+    'about.feature.export': 'Exportación STL: combinado, o dividido para impresión multicolor',
+    'about.createdBy': 'Creado por <a href="https://github.com/doccaz" target="_blank" rel="noopener">Erico Mendonca</a>',
+    'about.license': 'Código abierto, licencia MIT · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Ver el código en GitHub →</a>',
+    'brand.tagline': 'Diseña una placa de nombre, llavero o placa de mascota paramétrica y expórtala lista para imprimir — directo en tu navegador, sin instalar nada.',
+    'section.presets': 'ESTILOS PREDEFINIDOS',
+    'section.text': 'TEXTO',
+    'section.borderText': 'TEXTO DE BORDE',
+    'section.basePlate': 'PLACA BASE',
+    'section.holes': 'ORIFICIOS DE MONTAJE',
+    'section.keyring': 'ARGOLLA DE LLAVERO',
+    'section.colors': 'COLORES DE VISTA PREVIA',
+    'preset.bubble': '🎈 Llavero Burbuja — contorno grueso en tonos pastel',
+    'preset.chunkybold': '🔤 Negrita Redondeada — sans grueso y redondeado, placa calada',
+    'preset.cursive': '✍️ Encanto Cursivo — nombre en script, argolla de llavero',
+    'preset.twotone': '🏷️ Clásico Bicolor — letras en bloque sobre una placa',
+    'preset.sweetheart': '💗 Script Enamorado — cursiva rosa elegante, argolla de llavero',
+    'preset.bubblecursive': '💜 Cursiva Burbuja — script redondeado y grueso, argolla de llavero',
+    'preset.vintagemarquee': '✨ Marquesina Vintage — cursiva dorada clásica sobre negro',
+    'preset.bubblepop': '🎀 Burbuja Pop — letras burbuja gruesas rosa fuerte, argolla de llavero',
+    'preset.licenseplate': '🚗 Matrícula — línea pequeña de estado + número grande, orificios arriba',
+    'preset.showMore': 'Ver más estilos ▾',
+    'preset.showFewer': 'Ver menos estilos ▴',
+    'field.textStyle': 'Estilo de texto',
+    'tip.textStyle': '<b>Relieve:</b> texto elevado sobre la placa, en su propio color. <b>Grabado:</b> texto hundido en la placa como un rebaje, un solo material. <b>Corte total:</b> texto cortado por completo en la placa, como orificios abiertos.',
+    'style.emboss': 'Relieve',
+    'style.engrave': 'Grabado',
+    'style.diecut': 'Corte total',
+    'field.content': 'Contenido (una línea por renglón)',
+    'field.typeface': 'Tipografía',
+    'fontgroup.sansSerif': 'Sans / Serif',
+    'fontgroup.script': 'Script y manuscrita',
+    'fontgroup.bubble': 'Burbuja y negrita',
+    'fontgroup.nonLatin': 'Alfabetos no latinos',
+    'field.customFont': 'Fuente personalizada de Google (avanzado)',
+    'tip.customFont': 'Escribe el nombre exacto de cualquier fuente de Google Fonts y se carga al instante — no solo las del menú de arriba. Busca nombres en el enlace de abajo y pégalo aquí.',
+    'field.customFont.placeholder': 'p. ej. Shadows Into Light',
+    'button.load': 'Cargar',
+    'link.browseFonts': 'Ver fuentes en fonts.google.com →',
+    'field.textHeight': 'Altura del texto',
+    'field.textDepth': 'Profundidad del texto (altura del relieve)',
+    'field.textDepthEngrave': 'Profundidad del grabado',
+    'field.lineSpacing': 'Interlineado',
+    'tip.lineSpacing': 'Espacio vertical entre líneas, como porcentaje del espaciado normal. Solo importa con 2+ líneas de texto.',
+    'field.letterSpacing': 'Espaciado entre letras',
+    'tip.letterSpacing': 'Espacio horizontal extra insertado entre cada par de caracteres, en mm. Los valores negativos acercan el texto.',
+    'field.perLineSize': 'Tamaño por línea (% de la altura del texto)',
+    'tip.perLineSize': 'Ajusta la escala de cada línea de forma independiente — por ejemplo, un nombre grande en la línea 1 y un cargo o teléfono más pequeño debajo.',
+    'field.dotDecor': 'Personalizar el punto de la i/j',
+    'tip.dotDecor': 'Cambia el punto sobre la "i"/"j" minúscula por un icono pequeño — corazón, estrella, etc. Solo funciona si la fuente dibuja el punto como una forma separada (la mayoría lo hace).',
+    'field.icon': 'Icono',
+    'icon.heart': 'Corazón',
+    'icon.star': 'Estrella',
+    'icon.crown': 'Corona',
+    'icon.diamond': 'Diamante',
+    'icon.flower': 'Flor',
+    'icon.paw': 'Huella de pata',
+    'icon.custom': 'SVG personalizado…',
+    'field.customSvg': 'Ruta SVG personalizada',
+    'tip.customSvg': 'Pega una cadena de ruta "d" de SVG (o una etiqueta completa &lt;path d="..."/&gt;), con un viewBox de aproximadamente 0-24. Cualquier forma funciona — traza una en un sitio como svg-path-editor.com si no tienes una a mano.',
+    'field.centerH': 'Centrar horizontalmente',
+    'field.centerV': 'Centrar verticalmente',
+    'field.offsetX': 'Desplazamiento horizontal (+derecha)',
+    'field.offsetY': 'Desplazamiento vertical (+arriba)',
+    'field.topLine': 'Línea superior (opcional)',
+    'field.topLine.placeholder': 'p. ej. HOLA, MI NOMBRE ES',
+    'field.bottomLine': 'Línea inferior (opcional)',
+    'field.bottomLine.placeholder': 'p. ej. desde 2024',
+    'field.borderTextHeight': 'Altura del texto de borde',
+    'field.borderTextDepth': 'Profundidad del texto de borde (altura del relieve)',
+    'hint.borderTextContour': 'No disponible en modo Contorno - esa forma está totalmente definida por el texto principal.',
+    'field.shape': 'Forma',
+    'shape.rounded': 'Redondeada',
+    'shape.rect': 'Rectángulo',
+    'shape.oval': 'Óvalo',
+    'shape.contour': 'Contorno',
+    'field.autoFit': 'Ajustar placa al texto automáticamente',
+    'tip.autoFit': 'El ancho/alto de la placa se calculan a partir del texto automáticamente. Desactívalo para fijar dimensiones exactas abajo.',
+    'field.contourMargin': 'Margen alrededor de las letras',
+    'tip.contourMargin': 'Cuánto crece el contorno más allá de las letras en modo Contorno — un margen pequeño abraza el texto de cerca, uno mayor deja más borde.',
+    'field.contourConnect': 'Mantener las letras conectadas (unir partes separadas)',
+    'tip.contourConnect': 'Las letras/palabras que quedarían como piezas sueltas (p. ej. una "i" o un punto) se unen con puentes finos para que la placa se imprima como una sola pieza.',
+    'field.padding': 'Margen alrededor del texto',
+    'field.width': 'Ancho',
+    'field.height': 'Alto',
+    'field.cornerRadius': 'Radio de esquina',
+    'field.plateThickness': 'Grosor de la placa',
+    'field.bevel': 'Bordes biselados (placa + texto)',
+    'tip.bevel': 'Bisela los bordes exteriores de la placa y el texto en lugar de dejarlos rectos — un aspecto más suave, y sin necesidad de soportes en el borde superior.',
+    'field.bevelSize': 'Tamaño del bisel',
+    'field.computedSize': 'Tamaño calculado',
+    'field.layout': 'Disposición',
+    'holes.none': 'Ninguno',
+    'holes.1': '1 · extremo',
+    'holes.2': '2 · laterales',
+    'holes.top2': '2 · arriba',
+    'holes.4': '4 · esquinas',
+    'field.holeDiameter': 'Diámetro del orificio',
+    'field.edgeMargin': 'Margen de borde',
+    'field.keyringEnabled': 'Añadir argolla + orificio, estilo llavero',
+    'field.position': 'Posición',
+    'keyring.left': 'Extremo izquierdo',
+    'keyring.right': 'Extremo derecho',
+    'keyring.both': 'Ambos extremos',
+    'field.loopDiameter': 'Diámetro de la argolla',
+    'field.plate': 'Placa',
+    'field.text': 'Texto',
+    'button.exportCombined': 'Descargar STL (combinado)',
+    'button.exportSeparate': 'Descargar STL (cuerpo + texto, 2 archivos)',
+    'hint.exportMultiColor': 'Para AMS/multicolor: importa ambos archivos en tu laminador en el mismo paso (sin auto-organizar), y asigna un filamento distinto a cada uno — comparten el mismo origen, así que se alinearán automáticamente.',
+    'viewport.hint': 'arrastra para orbitar · desplaza para hacer zoom',
+    'viewport.rendering': 'Renderizando…',
+    'viewport.dimensions': '📏 Dimensiones',
+    'viewport.dimensionsTitle': 'Muestra líneas de medición de ancho, alto y grosor sobre el modelo',
+    'viewport.resetView': 'Restablecer vista',
+    'viewport.loading': 'cargando fuentes…',
+    'warning.missingGlyph': '⚠ "{font}" no tiene glifo para: {chars} — esos caracteres quedarán en blanco. Prueba otra fuente.',
+    'status.customFont.empty': 'Escribe primero un nombre de fuente.',
+    'status.customFont.alreadyLoaded': 'Ya cargada — se cambió a "{name}".',
+    'status.customFont.looking': 'Buscando "{name}" en Google Fonts…',
+    'status.customFont.loaded': 'Cargada "{name}" ✓',
+    'status.customFont.notFound': 'No se pudo encontrar "{name}" — prueba el nombre exacto de Google Fonts (p. ej. "Shadows Into Light").',
+    'lang.en': 'English',
+    'lang.pt-BR': 'Português (BR)',
+    'lang.es-ES': 'Español',
+  },
+};
+
+const SUPPORTED_LANGS = ['en', 'pt-BR', 'es-ES'];
+
+function detectInitialLang() {
+  const saved = localStorage.getItem('tagify3d_lang');
+  if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
+  const nav = (navigator.language || 'en').toLowerCase();
+  if (nav.startsWith('pt')) return 'pt-BR';
+  if (nav.startsWith('es')) return 'es-ES';
+  return 'en';
+}
+
+let currentLang = detectInitialLang();
+
+function t(key, vars) {
+  let str = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || TRANSLATIONS.en[key] || key;
+  if (vars) {
+    for (const k in vars) str = str.split('{' + k + '}').join(vars[k]);
+  }
+  return str;
+}
+
+function applyI18n() {
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.querySelectorAll('[data-i18n-label]').forEach((el) => {
+    el.label = t(el.getAttribute('data-i18n-label'));
+  });
+  document.querySelectorAll('[data-i18n-option]').forEach((el) => {
+    el.textContent = t(el.getAttribute('data-i18n-option'));
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
+  });
+  document.getElementById('aboutClose').setAttribute('aria-label', t('about.close'));
+  if (typeof updateTextStyleUI === 'function') updateTextStyleUI();
+  if (typeof updateMorePresetsToggleText === 'function') updateMorePresetsToggleText();
+}
+
+const langSelectEl = document.getElementById('langSelect');
+SUPPORTED_LANGS.forEach((code) => {
+  const opt = document.createElement('option');
+  opt.value = code;
+  opt.textContent = t('lang.' + code);
+  langSelectEl.appendChild(opt);
+});
+langSelectEl.value = currentLang;
+langSelectEl.addEventListener('change', () => {
+  currentLang = langSelectEl.value;
+  localStorage.setItem('tagify3d_lang', currentLang);
+  applyI18n();
+});
+
 
 // ---------- Scene setup ----------
 const holder = document.getElementById('canvas-holder');
@@ -990,17 +1479,17 @@ async function loadCustomFont(rawName) {
   const statusEl = document.getElementById('customFontStatus');
   const slug = slugifyFontName(rawName);
   if (!slug) {
-    statusEl.textContent = 'Enter a font name first.';
+    statusEl.textContent = t('status.customFont.empty');
     return;
   }
   const key = 'custom_' + slug.replace(/-/g, '_');
   if (FONT_SOURCES[key]) {
     els.font.value = key;
-    statusEl.textContent = `Already loaded — switched to "${rawName.trim()}".`;
+    statusEl.textContent = t('status.customFont.alreadyLoaded', { name: rawName.trim() });
     scheduleRebuild();
     return;
   }
-  statusEl.textContent = `Looking up "${rawName.trim()}" on Google Fonts…`;
+  statusEl.textContent = t('status.customFont.looking', { name: rawName.trim() });
   // Try every weight in parallel - sequential HEAD requests against a family
   // that doesn't exist on the CDN take one slow 404 round-trip each, which
   // added up to 10+ seconds for a bad name. Promise.any takes whichever
@@ -1015,10 +1504,10 @@ async function loadCustomFont(rawName) {
     FONT_SOURCES[key] = url;
     addCustomFontOption(key, rawName.trim());
     els.font.value = key;
-    statusEl.textContent = `Loaded "${rawName.trim()}" ✓`;
+    statusEl.textContent = t('status.customFont.loaded', { name: rawName.trim() });
     scheduleRebuild();
   } catch (e) {
-    statusEl.textContent = `Couldn't find "${rawName.trim()}" — try the exact Google Fonts name (e.g. "Shadows Into Light").`;
+    statusEl.textContent = t('status.customFont.notFound', { name: rawName.trim() });
   }
 }
 
@@ -1092,7 +1581,7 @@ let lineScales = {}; // line index -> percent (100 = base text height)
 
 function updateTextStyleUI() {
   document.getElementById('textDepthRow').style.display = textStyle === 'diecut' ? 'none' : 'block';
-  document.getElementById('textDepthLabel').textContent = textStyle === 'engrave' ? 'Engrave depth' : 'Text depth (raised height)';
+  document.getElementById('textDepthLabel').textContent = textStyle === 'engrave' ? t('field.textDepthEngrave') : t('field.textDepth');
   document.getElementById('textColorRow').style.display = textStyle === 'emboss' ? 'flex' : 'none';
 }
 
@@ -1144,7 +1633,11 @@ const PRESETS = {
     plateColor: '#bfe3ff', textColor: '#ff9e57',
   },
   chunkybold: {
-    font: 'baloo_2', fontSize: 16, textDepth: 2,
+    // Baloo 2 (was used here) has a broken "D" glyph on the @compai CDN -
+    // its outline data has a stray self-intersecting curve that shows up as
+    // a floating sliver next to any raised "D". Fredoka gives the same
+    // thick-rounded-sans look without the corrupt glyph.
+    font: 'fredoka', fontSize: 16, textDepth: 2,
     shapeMode: 'contour', contourMargin: 6, contourConnect: true,
     keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 4, keyringTabSize: 10,
     plateColor: '#2f5233', textColor: '#b7e4a0',
@@ -1269,11 +1762,17 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
   btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
 });
 
-document.getElementById('morePresetsToggle').addEventListener('click', (e) => {
+function updateMorePresetsToggleText() {
+  const panel = document.getElementById('morePresetsPanel');
+  const expanded = panel.style.display !== 'none';
+  document.getElementById('morePresetsToggle').textContent = expanded ? t('preset.showFewer') : t('preset.showMore');
+}
+
+document.getElementById('morePresetsToggle').addEventListener('click', () => {
   const panel = document.getElementById('morePresetsPanel');
   const expanded = panel.style.display !== 'none';
   panel.style.display = expanded ? 'none' : 'flex';
-  e.currentTarget.textContent = expanded ? 'Show more presets ▾' : 'Show fewer presets ▴';
+  updateMorePresetsToggleText();
 });
 
 function updateShapeUI() {
@@ -2014,7 +2513,7 @@ async function rebuild() {
     const missing = [...new Set(Array.from(allText).filter((ch) => ch.trim() !== '' && glyphs && !glyphs[ch]))];
     const warnEl = document.getElementById('glyphWarning');
     if (missing.length) {
-      warnEl.textContent = `⚠ "${els.font.selectedOptions[0]?.textContent || fontName}" has no glyph for: ${missing.join(' ')} — those characters will be blank. Try another font.`;
+      warnEl.textContent = t('warning.missingGlyph', { font: els.font.selectedOptions[0]?.textContent || fontName, chars: missing.join(' ') });
       warnEl.style.display = 'block';
     } else {
       warnEl.style.display = 'none';
@@ -2264,6 +2763,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverl
 updateShapeUI();
 updateTextStyleUI();
 renderLineScales();
+applyI18n();
 rebuild();
 </script>
 </body>
