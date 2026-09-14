@@ -151,6 +151,26 @@
   .checkrow input{width:15px;height:15px;accent-color:var(--accent);}
   .checkrow label{margin:0;color:var(--text);font-size:13px;cursor:pointer;}
 
+  .help-icon{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:14px;height:14px;border-radius:50%;flex-shrink:0;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--muted);
+    font-size:9.5px;font-family:'Space Grotesk',sans-serif;font-weight:700;
+    cursor:help;margin-left:5px;position:relative;vertical-align:1px;
+  }
+  .help-icon:hover{border-color:var(--accent2);color:var(--accent2);}
+  .help-icon .tip{
+    display:none;position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
+    width:220px;background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    padding:9px 11px;font-size:11.5px;line-height:1.55;color:var(--text);font-weight:400;
+    box-shadow:0 8px 22px rgba(0,0,0,.45);z-index:20;text-align:left;cursor:auto;
+  }
+  .help-icon:hover .tip{display:block;}
+  .help-icon .tip::after{
+    content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-top-color:var(--border);
+  }
+
   .readout{
     background:var(--panel-2);border:1px solid var(--border);border-radius:6px;
     padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);
@@ -262,7 +282,9 @@
       <div class="section">
         <div class="section-title">TEXT</div>
         <div class="row">
-          <label>Text style</label>
+          <label>Text style
+            <span class="help-icon">?<span class="tip"><b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.</span></span>
+          </label>
           <div class="segbtns" id="textStyleButtons">
             <button data-style="emboss" class="active">Emboss</button>
             <button data-style="engrave">Engrave</button>
@@ -324,12 +346,18 @@
           </select>
         </div>
         <div class="row">
-          <label for="customFontInput">Custom Google Font (advanced)</label>
+          <label for="customFontInput">
+            Custom Google Font (advanced)
+            <span class="help-icon">?<span class="tip">Type the exact name of any font from Google Fonts and it loads live — not just the ones in the dropdown above. Browse names at the link below, then paste one in here.</span></span>
+          </label>
           <div style="display:flex;gap:8px;">
             <input type="text" id="customFontInput" placeholder="e.g. Shadows Into Light" style="flex:1;">
             <button id="customFontLoad" class="btn btn-secondary" style="width:auto;white-space:nowrap;padding:8px 14px;">Load</button>
           </div>
-          <p id="customFontStatus" style="font-size:11px;color:var(--muted);margin:6px 2px 0;line-height:1.4;"></p>
+          <p style="font-size:11px;margin:6px 2px 0;line-height:1.4;">
+            <a href="https://fonts.google.com" target="_blank" rel="noopener" style="color:var(--accent2);">Browse fonts on fonts.google.com →</a>
+          </p>
+          <p id="customFontStatus" style="font-size:11px;color:var(--muted);margin:4px 2px 0;line-height:1.4;"></p>
         </div>
         <div class="row">
           <label>Text height</label>
@@ -346,21 +374,27 @@
           </div>
         </div>
         <div class="row">
-          <label>Line spacing</label>
+          <label>Line spacing
+            <span class="help-icon">?<span class="tip">Vertical gap between lines, as a percentage of the normal spacing. Only matters with 2+ lines of text.</span></span>
+          </label>
           <div class="slidewrap">
             <input type="range" id="lineSpacing" min="60" max="200" step="5" value="100">
             <span class="val" id="lineSpacingVal">100%</span>
           </div>
         </div>
         <div class="row">
-          <label>Letter spacing</label>
+          <label>Letter spacing
+            <span class="help-icon">?<span class="tip">Extra horizontal gap inserted between every pair of characters, in mm. Negative values tighten the text.</span></span>
+          </label>
           <div class="slidewrap">
             <input type="range" id="letterSpacing" min="-1.5" max="8" step="0.1" value="0">
             <span class="val" id="letterSpacingVal">0 mm</span>
           </div>
         </div>
         <div class="row" id="lineScalesRow" style="display:none;">
-          <label>Per-line size (% of text height)</label>
+          <label>Per-line size (% of text height)
+            <span class="help-icon">?<span class="tip">Scale each line independently — e.g. a big name on line 1 and a smaller job title or phone number below it.</span></span>
+          </label>
           <div id="lineScalesList"></div>
         </div>
         <div class="row row-split" id="alignRow">
@@ -425,10 +459,14 @@
         </div>
         <div class="row checkrow" id="autoFitRow">
           <input type="checkbox" id="autoFit" checked>
-          <label for="autoFit">Auto-fit plate to text</label>
+          <label for="autoFit">Auto-fit plate to text
+            <span class="help-icon">?<span class="tip">Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.</span></span>
+          </label>
         </div>
         <div class="row" id="contourMarginRow" style="display:none;">
-          <label>Margin around letters</label>
+          <label>Margin around letters
+            <span class="help-icon">?<span class="tip">How far the outline grows past the letters in Contour mode — a small margin hugs the text tightly, a larger one leaves more of a border.</span></span>
+          </label>
           <div class="slidewrap">
             <input type="range" id="contourMargin" min="1" max="20" step="0.5" value="4">
             <span class="val" id="contourMarginVal">4 mm</span>
@@ -436,7 +474,9 @@
         </div>
         <div class="row checkrow" id="contourConnectRow" style="display:none;">
           <input type="checkbox" id="contourConnect" checked>
-          <label for="contourConnect">Keep letters connected (bridge separated parts)</label>
+          <label for="contourConnect">Keep letters connected (bridge separated parts)
+            <span class="help-icon">?<span class="tip">Letters/words that would end up as separate floating pieces (e.g. an "i" or a dot) get linked with thin bridges so the plate prints as one piece.</span></span>
+          </label>
         </div>
         <div class="row" id="paddingRow">
           <label>Padding around text</label>
@@ -471,7 +511,9 @@
         </div>
         <div class="row checkrow">
           <input type="checkbox" id="bevelEnabled">
-          <label for="bevelEnabled">Beveled edges (plate + text)</label>
+          <label for="bevelEnabled">Beveled edges (plate + text)
+            <span class="help-icon">?<span class="tip">Chamfers the outer edges of the plate and text instead of leaving them sharp square-cut — softer look, and no supports needed for the top edge.</span></span>
+          </label>
         </div>
         <div class="row" id="bevelSizeRow" style="display:none;">
           <label>Bevel size</label>
@@ -561,9 +603,9 @@
   <div id="viewport">
     <div id="canvas-holder"></div>
     <div id="hint">drag to orbit · scroll to zoom</div>
-    <div id="viewportVersion">v1.5</div>
+    <div id="viewportVersion">v1.6</div>
     <div id="viewportToolbar">
-      <button id="dimensionsToggle" class="viewport-btn">📏 Dimensions</button>
+      <button id="dimensionsToggle" class="viewport-btn" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn">Reset view</button>
     </div>
     <div id="loading">loading fonts…</div>
