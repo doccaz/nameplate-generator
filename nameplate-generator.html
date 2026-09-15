@@ -337,17 +337,63 @@
       </div>
 
       <div class="section">
-        <div class="section-title" data-i18n="section.text">TEXT</div>
+        <div class="section-title" data-i18n="section.content">CONTENT</div>
+        <div class="row">
+          <label data-i18n="field.contentMode">Content type</label>
+          <div class="segbtns" id="contentModeButtons">
+            <button data-mode="text" class="active" data-i18n="mode.text">Text</button>
+            <button data-mode="picture" data-i18n="mode.picture">Picture Tag</button>
+          </div>
+        </div>
         <div class="row">
           <label><span data-i18n="field.textStyle">Text style</span>
-            <span class="help-icon">?<span class="tip" data-i18n-html="tip.textStyle"><b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.</span></span>
+            <span class="help-icon">?<span class="tip" data-i18n-html="tip.textStyle"><b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes. <b>Flush:</b> text sits level with the plate's top surface in its own color (a colored inlay, not a pocket) - print it upside down so the smoother bed-side face becomes the visible front.</span></span>
           </label>
           <div class="segbtns" id="textStyleButtons">
             <button data-style="emboss" class="active" data-i18n="style.emboss">Emboss</button>
             <button data-style="engrave" data-i18n="style.engrave">Engrave</button>
             <button data-style="diecut" data-i18n="style.diecut">Die Cut</button>
+            <button data-style="flush" data-i18n="style.flush">Flush</button>
           </div>
         </div>
+      </div>
+
+      <div class="section" id="pictureTagSection" style="display:none;">
+        <div class="section-title" data-i18n="section.pictureTag">PICTURE TAG</div>
+        <div class="row">
+          <label for="pictureSvgInput" data-i18n="field.svgUpload">SVG file</label>
+          <input type="file" id="pictureSvgInput" accept=".svg,image/svg+xml">
+          <p id="pictureSvgStatus" style="font-size:11px;color:var(--muted);margin:6px 2px 0;line-height:1.4;"></p>
+          <p id="pictureSvgWarning" style="display:none;font-size:11px;color:var(--accent);margin:6px 2px 0;line-height:1.4;"></p>
+        </div>
+        <div class="row" id="pictureRegionsRow" style="display:none;">
+          <label data-i18n="field.pictureColors">Detected colors</label>
+          <div id="pictureRegionsList"></div>
+        </div>
+        <div class="row" id="pictureDepthRow">
+          <label id="pictureDepthLabel" data-i18n="field.textDepth">Text depth (raised height)</label>
+          <div class="slidewrap">
+            <input type="range" id="pictureDepth" min="0.4" max="6" step="0.2" value="1.2">
+            <span class="val" id="pictureDepthVal">1.2 mm</span>
+          </div>
+        </div>
+        <div class="row checkrow">
+          <input type="checkbox" id="pictureFitToPlate">
+          <label for="pictureFitToPlate"><span data-i18n="field.pictureFit">Fit picture to plate</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.pictureFit">Scales the picture automatically to fill the current plate size (minus padding), instead of the exact size below. Turns off "Auto-fit plate" since they'd otherwise fight each other.</span></span>
+          </label>
+        </div>
+        <div class="row" id="pictureScaleRow">
+          <label data-i18n="field.pictureScale">Picture size (longer side)</label>
+          <div class="slidewrap">
+            <input type="range" id="pictureScale" min="10" max="150" step="1" value="40">
+            <span class="val" id="pictureScaleVal">40 mm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="textSection">
+        <div class="section-title" data-i18n="section.text">TEXT</div>
         <div class="row">
           <label for="textInput" data-i18n="field.content">Content (one line per row)</label>
           <textarea id="textInput">TAGiFY 3D</textarea>
@@ -685,7 +731,7 @@
     </div>
     <div id="export-bar">
       <button class="btn btn-primary" id="exportCombined" data-i18n="button.exportCombined">Download STL (combined)</button>
-      <button class="btn btn-secondary" id="exportSeparate" data-i18n="button.exportSeparate">Download STL (body + text, 2 files)</button>
+      <button class="btn btn-secondary" id="exportSeparate">Download STL (body + text, 2 files)</button>
       <p style="font-size:11px;color:var(--muted);margin:2px 2px 0 2px;line-height:1.5;" data-i18n="hint.exportMultiColor">
         For AMS/multi-color: import both files into your slicer in the same step
         (don't auto-arrange), then assign a separate filament to each — they share
@@ -698,7 +744,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.13</div>
+    <div id="viewportVersion">v2.14</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -735,6 +781,20 @@ const TRANSLATIONS = {
     'about.license': 'Open source, MIT licensed · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">View the code on GitHub →</a>',
     'brand.tagline': 'Design a parametric name plate, keychain, or pet tag and export it ready to print — right in your browser, no install.',
     'section.presets': 'STYLE PRESETS',
+    'section.content': 'CONTENT',
+    'field.contentMode': 'Content type',
+    'mode.text': 'Text',
+    'mode.picture': 'Picture Tag',
+    'section.pictureTag': 'PICTURE TAG',
+    'field.svgUpload': 'SVG file',
+    'field.pictureColors': 'Detected colors',
+    'field.pictureScale': 'Picture size (longer side)',
+    'field.pictureFit': 'Fit picture to plate',
+    'tip.pictureFit': 'Scales the picture automatically to fill the current plate size (minus padding), instead of the exact size below. Turns off "Auto-fit plate" since they\'d otherwise fight each other.',
+    'status.svgLoaded': 'Loaded "{name}" — {count} color region(s) detected.',
+    'warning.svgSkipped': 'Skipped unsupported elements: {items}.',
+    'warning.svgParseFailed': 'Could not parse this file as SVG.',
+    'label.region': 'Color {n}',
     'section.text': 'TEXT',
     'section.borderText': 'BORDER TEXT',
     'section.basePlate': 'BASE PLATE',
@@ -753,10 +813,11 @@ const TRANSLATIONS = {
     'preset.showMore': 'Show more presets ▾',
     'preset.showFewer': 'Show fewer presets ▴',
     'field.textStyle': 'Text style',
-    'tip.textStyle': '<b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes.',
+    'tip.textStyle': '<b>Emboss:</b> text raised on top of the plate, its own color. <b>Engrave:</b> text recessed into the plate as a pocket, single material. <b>Die Cut:</b> text cut all the way through the plate as open holes. <b>Flush:</b> text sits level with the plate\'s top surface in its own color (a colored inlay, not a pocket) - print it upside down so the smoother bed-side face becomes the visible front.',
     'style.emboss': 'Emboss',
     'style.engrave': 'Engrave',
     'style.diecut': 'Die Cut',
+    'style.flush': 'Flush',
     'field.content': 'Content (one line per row)',
     'field.typeface': 'Typeface',
     'fontgroup.sansSerif': 'Sans / Serif',
@@ -770,7 +831,7 @@ const TRANSLATIONS = {
     'link.browseFonts': 'Browse fonts on fonts.google.com →',
     'field.textHeight': 'Text height',
     'field.textDepth': 'Text depth (raised height)',
-    'field.textDepthEngrave': 'Engrave depth',
+    'field.textDepthEngrave': 'Pocket depth',
     'field.lineSpacing': 'Line spacing',
     'tip.lineSpacing': 'Vertical gap between lines, as a percentage of the normal spacing. Only matters with 2+ lines of text.',
     'field.letterSpacing': 'Letter spacing',
@@ -837,8 +898,8 @@ const TRANSLATIONS = {
     'field.plate': 'Plate',
     'field.text': 'Text',
     'button.exportCombined': 'Download STL (combined)',
-    'button.exportSeparate': 'Download STL (body + text, 2 files)',
-    'hint.exportMultiColor': "For AMS/multi-color: import both files into your slicer in the same step (don't auto-arrange), then assign a separate filament to each — they share the same origin so they'll line up automatically.",
+    'button.exportSeparate': 'Download STL ({n} files)',
+    'hint.exportMultiColor': "For AMS/multi-color: import all the files into your slicer in the same step (don't auto-arrange), then assign a separate filament to each — they share the same origin so they'll line up automatically.",
     'viewport.hint': 'drag to orbit · scroll to zoom',
     'viewport.rendering': 'Rendering…',
     'viewport.dimensions': '📏 Dimensions',
@@ -872,6 +933,20 @@ const TRANSLATIONS = {
     'about.license': 'Código aberto, licença MIT · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Ver o código no GitHub →</a>',
     'brand.tagline': 'Crie uma placa de nome, chaveiro ou plaquinha de pet paramétrica e exporte pronta para imprimir — direto no seu navegador, sem instalar nada.',
     'section.presets': 'ESTILOS PRONTOS',
+    'section.content': 'CONTEÚDO',
+    'field.contentMode': 'Tipo de conteúdo',
+    'mode.text': 'Texto',
+    'mode.picture': 'Plaquinha com Imagem',
+    'section.pictureTag': 'PLAQUINHA COM IMAGEM',
+    'field.svgUpload': 'Arquivo SVG',
+    'field.pictureColors': 'Cores detectadas',
+    'field.pictureScale': 'Tamanho da imagem (lado maior)',
+    'field.pictureFit': 'Ajustar imagem à placa',
+    'tip.pictureFit': 'Escala a imagem automaticamente para preencher o tamanho atual da placa (menos a margem), em vez do tamanho exato abaixo. Desativa o "Auto-ajustar placa", já que os dois entrariam em conflito.',
+    'status.svgLoaded': '"{name}" carregado — {count} região(ões) de cor detectada(s).',
+    'warning.svgSkipped': 'Elementos não suportados ignorados: {items}.',
+    'warning.svgParseFailed': 'Não foi possível interpretar este arquivo como SVG.',
+    'label.region': 'Cor {n}',
     'section.text': 'TEXTO',
     'section.borderText': 'TEXTO DE BORDA',
     'section.basePlate': 'PLACA BASE',
@@ -890,10 +965,11 @@ const TRANSLATIONS = {
     'preset.showMore': 'Ver mais estilos ▾',
     'preset.showFewer': 'Ver menos estilos ▴',
     'field.textStyle': 'Estilo do texto',
-    'tip.textStyle': '<b>Relevo:</b> texto elevado sobre a placa, em cor própria. <b>Gravado:</b> texto recuado na placa como um rebaixo, material único. <b>Vazado:</b> texto cortado por completo na placa, como furos abertos.',
+    'tip.textStyle': '<b>Relevo:</b> texto elevado sobre a placa, em cor própria. <b>Gravado:</b> texto recuado na placa como um rebaixo, material único. <b>Vazado:</b> texto cortado por completo na placa, como furos abertos. <b>Nivelado:</b> texto no mesmo nível da superfície superior da placa, em cor própria (um encaixe colorido, não um rebaixo) - imprima de cabeça para baixo para que o lado mais liso (o que tocava a mesa) fique à mostra.',
     'style.emboss': 'Relevo',
     'style.engrave': 'Gravado',
     'style.diecut': 'Vazado',
+    'style.flush': 'Nivelado',
     'field.content': 'Conteúdo (uma linha por linha)',
     'field.typeface': 'Fonte',
     'fontgroup.sansSerif': 'Sans / Serifada',
@@ -907,7 +983,7 @@ const TRANSLATIONS = {
     'link.browseFonts': 'Ver fontes em fonts.google.com →',
     'field.textHeight': 'Altura do texto',
     'field.textDepth': 'Profundidade do texto (altura do relevo)',
-    'field.textDepthEngrave': 'Profundidade da gravação',
+    'field.textDepthEngrave': 'Profundidade do rebaixo',
     'field.lineSpacing': 'Espaçamento entre linhas',
     'tip.lineSpacing': 'Espaço vertical entre linhas, como porcentagem do espaçamento normal. Só importa com 2+ linhas de texto.',
     'field.letterSpacing': 'Espaçamento entre letras',
@@ -974,8 +1050,8 @@ const TRANSLATIONS = {
     'field.plate': 'Placa',
     'field.text': 'Texto',
     'button.exportCombined': 'Baixar STL (combinado)',
-    'button.exportSeparate': 'Baixar STL (corpo + texto, 2 arquivos)',
-    'hint.exportMultiColor': 'Para AMS/multicolor: importe os dois arquivos no fatiador na mesma etapa (sem auto-organizar) e atribua um filamento diferente para cada um — eles compartilham a mesma origem, então vão se alinhar automaticamente.',
+    'button.exportSeparate': 'Baixar STL ({n} arquivos)',
+    'hint.exportMultiColor': 'Para AMS/multicolor: importe todos os arquivos no fatiador na mesma etapa (sem auto-organizar) e atribua um filamento diferente para cada um — eles compartilham a mesma origem, então vão se alinhar automaticamente.',
     'viewport.hint': 'arraste para girar · role para dar zoom',
     'viewport.rendering': 'Renderizando…',
     'viewport.dimensions': '📏 Dimensões',
@@ -1009,6 +1085,20 @@ const TRANSLATIONS = {
     'about.license': 'Código abierto, licencia MIT · <a href="https://github.com/doccaz/nameplate-generator" target="_blank" rel="noopener">Ver el código en GitHub →</a>',
     'brand.tagline': 'Diseña una placa de nombre, llavero o placa de mascota paramétrica y expórtala lista para imprimir — directo en tu navegador, sin instalar nada.',
     'section.presets': 'ESTILOS PREDEFINIDOS',
+    'section.content': 'CONTENIDO',
+    'field.contentMode': 'Tipo de contenido',
+    'mode.text': 'Texto',
+    'mode.picture': 'Placa con Imagen',
+    'section.pictureTag': 'PLACA CON IMAGEN',
+    'field.svgUpload': 'Archivo SVG',
+    'field.pictureColors': 'Colores detectados',
+    'field.pictureScale': 'Tamaño de la imagen (lado mayor)',
+    'field.pictureFit': 'Ajustar imagen a la placa',
+    'tip.pictureFit': 'Escala la imagen automáticamente para llenar el tamaño actual de la placa (menos el margen), en lugar del tamaño exacto de abajo. Desactiva "Auto-ajustar placa", ya que ambos entrarían en conflicto.',
+    'status.svgLoaded': 'Se cargó "{name}" — {count} región/regiones de color detectada(s).',
+    'warning.svgSkipped': 'Elementos no compatibles omitidos: {items}.',
+    'warning.svgParseFailed': 'No se pudo interpretar este archivo como SVG.',
+    'label.region': 'Color {n}',
     'section.text': 'TEXTO',
     'section.borderText': 'TEXTO DE BORDE',
     'section.basePlate': 'PLACA BASE',
@@ -1027,10 +1117,11 @@ const TRANSLATIONS = {
     'preset.showMore': 'Ver más estilos ▾',
     'preset.showFewer': 'Ver menos estilos ▴',
     'field.textStyle': 'Estilo de texto',
-    'tip.textStyle': '<b>Relieve:</b> texto elevado sobre la placa, en su propio color. <b>Grabado:</b> texto hundido en la placa como un rebaje, un solo material. <b>Corte total:</b> texto cortado por completo en la placa, como orificios abiertos.',
+    'tip.textStyle': '<b>Relieve:</b> texto elevado sobre la placa, en su propio color. <b>Grabado:</b> texto hundido en la placa como un rebaje, un solo material. <b>Corte total:</b> texto cortado por completo en la placa, como orificios abiertos. <b>Nivelado:</b> texto al mismo nivel que la superficie superior de la placa, en su propio color (un encaje de color, no un rebaje) - imprímelo boca abajo para que la cara más lisa (la que tocaba la base) quede a la vista.',
     'style.emboss': 'Relieve',
     'style.engrave': 'Grabado',
     'style.diecut': 'Corte total',
+    'style.flush': 'Nivelado',
     'field.content': 'Contenido (una línea por renglón)',
     'field.typeface': 'Tipografía',
     'fontgroup.sansSerif': 'Sans / Serif',
@@ -1044,7 +1135,7 @@ const TRANSLATIONS = {
     'link.browseFonts': 'Ver fuentes en fonts.google.com →',
     'field.textHeight': 'Altura del texto',
     'field.textDepth': 'Profundidad del texto (altura del relieve)',
-    'field.textDepthEngrave': 'Profundidad del grabado',
+    'field.textDepthEngrave': 'Profundidad del rebaje',
     'field.lineSpacing': 'Interlineado',
     'tip.lineSpacing': 'Espacio vertical entre líneas, como porcentaje del espaciado normal. Solo importa con 2+ líneas de texto.',
     'field.letterSpacing': 'Espaciado entre letras',
@@ -1111,8 +1202,8 @@ const TRANSLATIONS = {
     'field.plate': 'Placa',
     'field.text': 'Texto',
     'button.exportCombined': 'Descargar STL (combinado)',
-    'button.exportSeparate': 'Descargar STL (cuerpo + texto, 2 archivos)',
-    'hint.exportMultiColor': 'Para AMS/multicolor: importa ambos archivos en tu laminador en el mismo paso (sin auto-organizar), y asigna un filamento distinto a cada uno — comparten el mismo origen, así que se alinearán automáticamente.',
+    'button.exportSeparate': 'Descargar STL ({n} archivos)',
+    'hint.exportMultiColor': 'Para AMS/multicolor: importa todos los archivos en tu laminador en el mismo paso (sin auto-organizar), y asigna un filamento distinto a cada uno — comparten el mismo origen, así que se alinearán automáticamente.',
     'viewport.hint': 'arrastra para orbitar · desplaza para hacer zoom',
     'viewport.rendering': 'Renderizando…',
     'viewport.dimensions': '📏 Dimensiones',
@@ -1543,6 +1634,10 @@ const els = {
   keyringEnabled: document.getElementById('keyringEnabled'),
   keyringHoleDiameter: document.getElementById('keyringHoleDiameter'),
   keyringTabSize: document.getElementById('keyringTabSize'),
+  pictureSvgInput: document.getElementById('pictureSvgInput'),
+  pictureDepth: document.getElementById('pictureDepth'),
+  pictureScale: document.getElementById('pictureScale'),
+  pictureFitToPlate: document.getElementById('pictureFitToPlate'),
 };
 
 let keyringSide = 'left';
@@ -1567,11 +1662,15 @@ let shapeMode = 'rounded';
 let holeMode = 'none';
 let textStyle = 'emboss'; // 'emboss' | 'engrave' | 'diecut'
 let lineScales = {}; // line index -> percent (100 = base text height)
+let contentMode = 'text'; // 'text' | 'picture'
+let pictureData = null; // { regions: [{colorHex, shapes, included}], skipped: [{tag, reason}] }
 
 function updateTextStyleUI() {
-  document.getElementById('textDepthRow').style.display = textStyle === 'diecut' ? 'none' : 'block';
-  document.getElementById('textDepthLabel').textContent = textStyle === 'engrave' ? t('field.textDepthEngrave') : t('field.textDepth');
-  document.getElementById('textColorRow').style.display = textStyle === 'emboss' ? 'flex' : 'none';
+  const depthRowId = contentMode === 'picture' ? 'pictureDepthRow' : 'textDepthRow';
+  const depthLabelId = contentMode === 'picture' ? 'pictureDepthLabel' : 'textDepthLabel';
+  document.getElementById(depthRowId).style.display = textStyle === 'diecut' ? 'none' : 'block';
+  document.getElementById(depthLabelId).textContent = (textStyle === 'engrave' || textStyle === 'flush') ? t('field.textDepthEngrave') : t('field.textDepth');
+  document.getElementById('textColorRow').style.display = ((textStyle === 'emboss' || textStyle === 'flush') && contentMode === 'text') ? 'flex' : 'none';
 }
 
 document.getElementById('textStyleButtons').addEventListener('click', (e) => {
@@ -1580,6 +1679,33 @@ document.getElementById('textStyleButtons').addEventListener('click', (e) => {
   btn.classList.add('active');
   textStyle = btn.dataset.style;
   updateTextStyleUI();
+  scheduleRebuild();
+});
+
+function updateContentModeUI() {
+  document.getElementById('textSection').style.display = contentMode === 'text' ? 'block' : 'none';
+  document.getElementById('borderTextSection').style.display = (contentMode === 'text' && shapeMode !== 'contour') ? 'block' : 'none';
+  document.getElementById('pictureTagSection').style.display = contentMode === 'picture' ? 'block' : 'none';
+  const contourBtn = document.querySelector('#shapeButtons button[data-shape="contour"]');
+  if (contourBtn) {
+    contourBtn.disabled = contentMode === 'picture';
+    contourBtn.style.opacity = contentMode === 'picture' ? '0.35' : '1';
+    contourBtn.style.pointerEvents = contentMode === 'picture' ? 'none' : 'auto';
+  }
+  if (contentMode === 'picture' && shapeMode === 'contour') {
+    shapeMode = 'rounded';
+    document.querySelectorAll('#shapeButtons button').forEach(b => b.classList.toggle('active', b.dataset.shape === 'rounded'));
+  }
+  updateShapeUI();
+  updateTextStyleUI();
+}
+
+document.getElementById('contentModeButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  contentMode = btn.dataset.mode;
+  updateContentModeUI();
   scheduleRebuild();
 });
 
@@ -1618,7 +1744,7 @@ const PRESETS = {
   bubble: {
     font: 'titan_one', fontSize: 15, textDepth: 2.5,
     shapeMode: 'contour', contourMargin: 5, contourConnect: true,
-    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 4, keyringTabSize: 10,
+    keyringEnabled: true, keyringSide: 'left', keyringHoleDiameter: 4, keyringTabSize: 6,
     plateColor: '#bfe3ff', textColor: '#ff9e57',
   },
   chunkybold: {
@@ -1769,7 +1895,8 @@ function updateShapeUI() {
   document.getElementById('autoFitRow').style.display = contour ? 'none' : 'flex';
   document.getElementById('contourMarginRow').style.display = contour ? 'block' : 'none';
   document.getElementById('contourConnectRow').style.display = contour ? 'flex' : 'none';
-  document.getElementById('paddingRow').style.display = (!contour && els.autoFit.checked) ? 'block' : 'none';
+  const pictureFit = contentMode === 'picture' && els.pictureFitToPlate.checked;
+  document.getElementById('paddingRow').style.display = (!contour && (els.autoFit.checked || pictureFit)) ? 'block' : 'none';
   document.getElementById('manualSizeRow').style.display = (!contour && !els.autoFit.checked) ? 'flex' : 'none';
   document.getElementById('cornerRow').style.display = (!contour && (shapeMode === 'rect' || shapeMode === 'rounded')) ? 'block' : 'none';
   document.getElementById('cornerRow').style.opacity = shapeMode === 'rounded' ? '1' : '0.35';
@@ -1779,7 +1906,7 @@ function updateShapeUI() {
   document.getElementById('offsetsRow').style.display = (!contour && (!els.centerH.checked || !els.centerV.checked)) ? 'flex' : 'none';
   document.getElementById('offsetXRow').style.display = (!contour && !els.centerH.checked) ? 'block' : 'none';
   document.getElementById('offsetYRow').style.display = (!contour && !els.centerV.checked) ? 'block' : 'none';
-  document.getElementById('borderTextSection').style.display = contour ? 'none' : 'block';
+  document.getElementById('borderTextSection').style.display = (contour || contentMode === 'picture') ? 'none' : 'block';
 }
 
 document.getElementById('shapeButtons').addEventListener('click', (e) => {
@@ -1802,6 +1929,19 @@ document.getElementById('holeButtons').addEventListener('click', (e) => {
 });
 
 els.autoFit.addEventListener('change', () => {
+  if (els.autoFit.checked && els.pictureFitToPlate.checked) {
+    els.pictureFitToPlate.checked = false;
+    document.getElementById('pictureScaleRow').style.display = 'block';
+  }
+  updateShapeUI();
+  scheduleRebuild();
+});
+
+els.pictureFitToPlate.addEventListener('change', () => {
+  if (els.pictureFitToPlate.checked && els.autoFit.checked) {
+    els.autoFit.checked = false;
+  }
+  document.getElementById('pictureScaleRow').style.display = els.pictureFitToPlate.checked ? 'none' : 'block';
   updateShapeUI();
   scheduleRebuild();
 });
@@ -1842,6 +1982,66 @@ els.bevelEnabled.addEventListener('change', () => {
 bindSlider(els.borderTextSize, document.getElementById('borderTextSizeVal'), 'mm');
 bindSlider(els.borderTextDepth, document.getElementById('borderTextDepthVal'), 'mm');
 [els.topText, els.bottomText].forEach(el => el.addEventListener('input', scheduleRebuild));
+
+bindSlider(els.pictureDepth, document.getElementById('pictureDepthVal'), 'mm');
+bindSlider(els.pictureScale, document.getElementById('pictureScaleVal'), 'mm');
+els.pictureSvgInput.addEventListener('change', () => {
+  const file = els.pictureSvgInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const status = document.getElementById('pictureSvgStatus');
+    const warning = document.getElementById('pictureSvgWarning');
+    try {
+      pictureData = parsePictureSvg(reader.result);
+      status.textContent = t('status.svgLoaded', { count: pictureData.regions.length, name: file.name });
+      if (pictureData.skipped.length) {
+        warning.style.display = 'block';
+        warning.textContent = t('warning.svgSkipped', {
+          items: pictureData.skipped.map(s => `${s.tag} (${s.reason})`).join(', '),
+        });
+      } else {
+        warning.style.display = 'none';
+        warning.textContent = '';
+      }
+    } catch (e) {
+      pictureData = null;
+      status.textContent = '';
+      warning.style.display = 'block';
+      warning.textContent = t('warning.svgParseFailed');
+    }
+    renderPictureRegions();
+    scheduleRebuild();
+  };
+  reader.readAsText(file);
+});
+
+function renderPictureRegions() {
+  const row = document.getElementById('pictureRegionsRow');
+  const list = document.getElementById('pictureRegionsList');
+  list.innerHTML = '';
+  if (!pictureData || !pictureData.regions.length) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+  pictureData.regions.forEach((region, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'row-split checkrow';
+    wrap.style.alignItems = 'center';
+    wrap.innerHTML = `
+      <input type="checkbox" id="pictureRegionInc${i}" ${region.included ? 'checked' : ''}>
+      <input type="color" id="pictureRegionColor${i}" value="${region.colorHex}" style="width:36px;height:28px;padding:0;border:none;">
+      <label for="pictureRegionInc${i}" style="flex:1;">${t('label.region', { n: i + 1 })}</label>
+    `;
+    list.appendChild(wrap);
+    wrap.querySelector(`#pictureRegionInc${i}`).addEventListener('change', (e) => {
+      region.included = e.target.checked;
+      scheduleRebuild();
+    });
+    wrap.querySelector(`#pictureRegionColor${i}`).addEventListener('input', (e) => {
+      region.colorHex = e.target.value;
+      scheduleRebuild();
+    });
+  });
+}
 
 function updateDotDecorUI() {
   document.getElementById('dotDecorRow').style.display = els.dotDecorEnabled.checked ? 'flex' : 'none';
@@ -1945,7 +2145,12 @@ function getLetterPolygons(layout) {
   layout.forEach(ld => {
     if (!ld) return;
     ld.shapes.forEach(sh => {
-      const pts = sh.extractPoints(12).shape;
+      // 48, not the 12 a typeface glyph's gentle curves would be fine with -
+      // Picture Tag regions can be arbitrary imported artwork (tight spiral
+      // curves etc.) that 12 samples under-resolves into a self-crossing
+      // polygon, which earcut then bridges with a long stray sliver when
+      // it's used as a punched hole.
+      const pts = sh.extractPoints(48).shape;
       if (pts.length >= 3) polys.push(pts.map(p => ({ x: p.x + ld.xOff, y: p.y + ld.yOff })));
     });
   });
@@ -1960,7 +2165,7 @@ function getGlyphCounters(layout) {
   layout.forEach(ld => {
     if (!ld) return;
     ld.shapes.forEach(sh => (sh.holes || []).forEach(h => {
-      const pts = h.getPoints(12).map(p => ({ x: p.x + ld.xOff, y: p.y + ld.yOff }));
+      const pts = h.getPoints(48).map(p => ({ x: p.x + ld.xOff, y: p.y + ld.yOff }));
       if (pts.length >= 3) counters.push(pts);
     }));
   });
@@ -1983,6 +2188,30 @@ function cloneShapeWithHoles(shape, dx = 0, dy = 0, resolution = 64) {
     const hPts = h.getPoints(resolution);
     const hs = new THREE.Path();
     hPts.forEach((p, i) => (i === 0 ? hs.moveTo(p.x + dx, p.y + dy) : hs.lineTo(p.x + dx, p.y + dy)));
+    hs.closePath();
+    return hs;
+  });
+  return s;
+}
+
+// Like cloneShapeWithHoles, but scales first (Picture Tag mode: region
+// shapes come out of parsePictureSvg() normalized to a unit box, then get
+// scaled here to the mm size the user picked with the picture-size slider).
+function scaleAndShiftShape(shape, scale, dx = 0, dy = 0, resolution = 48) {
+  const pts = shape.getPoints(resolution);
+  const s = new THREE.Shape();
+  pts.forEach((p, i) => {
+    const x = p.x * scale + dx, y = p.y * scale + dy;
+    i === 0 ? s.moveTo(x, y) : s.lineTo(x, y);
+  });
+  s.closePath();
+  s.holes = (shape.holes || []).map((h) => {
+    const hPts = h.getPoints(resolution);
+    const hs = new THREE.Path();
+    hPts.forEach((p, i) => {
+      const x = p.x * scale + dx, y = p.y * scale + dy;
+      i === 0 ? hs.moveTo(x, y) : hs.lineTo(x, y);
+    });
     hs.closePath();
     return hs;
   });
@@ -2071,6 +2300,168 @@ function getDotIconShapes(iconName, customSvg) {
   }
   dotIconCache[cacheKey] = result;
   return result;
+}
+
+// path.toShapes(true) decides hole-vs-solid purely from each subpath's
+// winding direction, which real-world compound logo paths violate constantly
+// (e.g. a wordmark exported as one <path> with several disjoint letters that
+// don't all wind the same way) - it then silently balls up unrelated,
+// non-overlapping letters into one shape with bogus "holes", instead of
+// several independent shapes. This rebuilds shapes/holes from actual
+// geometric nesting (point-in-polygon against the smallest enclosing
+// subpath) instead, which is what determines holes vs. solids correctly
+// regardless of winding direction.
+function subPathsToShapes(path, samples = 32) {
+  const polys = path.subPaths.map((sp) => sp.getPoints(samples));
+  const areas = polys.map((p) => Math.abs(signedArea(p)));
+  const parent = polys.map((poly, i) => {
+    let best = -1, bestArea = Infinity;
+    polys.forEach((other, j) => {
+      if (i === j || areas[j] <= areas[i]) return;
+      if (areas[j] < bestArea && pointInPolygon(poly[0], other)) { best = j; bestArea = areas[j]; }
+    });
+    return best;
+  });
+  const depth = polys.map(() => -1);
+  const getDepth = (i) => {
+    if (depth[i] !== -1) return depth[i];
+    depth[i] = 0; // guard against cycles before recursing
+    return (depth[i] = parent[i] === -1 ? 0 : getDepth(parent[i]) + 1);
+  };
+  polys.forEach((_, i) => getDepth(i));
+
+  const toPoly = (Ctor, poly) => {
+    const p = new Ctor();
+    poly.forEach((pt, i) => (i === 0 ? p.moveTo(pt.x, pt.y) : p.lineTo(pt.x, pt.y)));
+    p.closePath();
+    return p;
+  };
+  const shapeByIndex = new Map();
+  const shapes = [];
+  polys.forEach((poly, i) => {
+    if (depth[i] % 2 === 0) {
+      const shape = toPoly(THREE.Shape, poly);
+      shapeByIndex.set(i, shape);
+      shapes.push(shape);
+    }
+  });
+  polys.forEach((poly, i) => {
+    if (depth[i] % 2 === 1) {
+      const parentShape = shapeByIndex.get(parent[i]);
+      if (parentShape) parentShape.holes.push(toPoly(THREE.Path, poly));
+    }
+  });
+  return shapes;
+}
+
+// Real-world exported SVGs (Illustrator especially) routinely carry hidden
+// layers - e.g. a "padding" group marked display:none via a CSS class,
+// kept only so the original design tool preserves whitespace around the
+// visible artwork. SVGLoader has no notion of CSS display/visibility, so
+// without this those hidden shapes get parsed and rendered as if visible.
+// Uses the browser's own cascade (via a detached-but-attached container so
+// getComputedStyle resolves classes/<style> blocks) rather than
+// hand-rolling CSS resolution.
+function stripHiddenSvgElements(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svgEl = doc.documentElement;
+  if (svgEl.querySelector('parsererror')) return svgText;
+
+  // getComputedStyle on a cross-document-adopted, detached SVG turned out
+  // unreliable in testing (correct one call, wrongly flagged everything
+  // hidden the next) - parsing the <style> block's own class rules directly
+  // is simpler and deterministic for the common real-world case (an
+  // Illustrator-exported "hidden layer" using a plain `.stN{display:none;}`
+  // class rule).
+  const hiddenClasses = new Set();
+  doc.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent || '';
+    const ruleRe = /\.([\w-]+)\s*\{([^}]*)\}/g;
+    let m;
+    while ((m = ruleRe.exec(css))) {
+      if (/display\s*:\s*none/i.test(m[2]) || /visibility\s*:\s*hidden/i.test(m[2])) hiddenClasses.add(m[1]);
+    }
+  });
+  const isSelfHidden = (el) => {
+    const inlineStyle = el.getAttribute('style') || '';
+    if (/display\s*:\s*none/i.test(inlineStyle) || /visibility\s*:\s*hidden/i.test(inlineStyle)) return true;
+    if (el.getAttribute('display') === 'none' || el.getAttribute('visibility') === 'hidden') return true;
+    return (el.getAttribute('class') || '').split(/\s+/).some((c) => hiddenClasses.has(c));
+  };
+  // Removing an ancestor drops its descendants with it regardless of any
+  // contradicting class on the child (e.g. Illustrator's own
+  // .st1{display:inline} on a group nested inside a hidden .st0 one) -
+  // exactly how a real ancestor display:none cascades.
+  [...svgEl.querySelectorAll('*')].filter(isSelfHidden).forEach((el) => el.remove());
+  return new XMLSerializer().serializeToString(svgEl);
+}
+
+// Parses an uploaded multi-path SVG (Picture Tag mode) into per-color region
+// groups, unlike getDotIconShapes() above which flattens everything into one
+// flat shape array and discards per-path fill color entirely. Every kept
+// shape is normalized into ONE shared coordinate frame (not per-shape like
+// the dot icons) so regions keep their positions relative to each other.
+function parsePictureSvg(svgText) {
+  const data = svgLoaderInstance.parse(stripHiddenSvgElements(svgText));
+  const buckets = new Map(); // hex -> THREE.Shape[]
+  const skipped = [];
+  data.paths.forEach((path) => {
+    const style = (path.userData && path.userData.style) || {};
+    const fill = style.fill;
+    const tag = (path.userData && path.userData.node && path.userData.node.tagName) || 'path';
+    if (!fill || fill === 'none') {
+      skipped.push({ tag, reason: 'no fill' });
+      return;
+    }
+    if (/url\(/i.test(fill)) {
+      skipped.push({ tag, reason: 'gradient/pattern fill' });
+      return;
+    }
+    let shapes;
+    try {
+      shapes = subPathsToShapes(path);
+    } catch (e) {
+      skipped.push({ tag, reason: 'unparseable path' });
+      return;
+    }
+    if (!shapes.length) return;
+    const hex = '#' + path.color.getHexString();
+    if (!buckets.has(hex)) buckets.set(hex, []);
+    buckets.get(hex).push(...shapes);
+  });
+
+  const allShapes = [...buckets.values()].flat();
+  if (!allShapes.length) return { regions: [], skipped };
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  allShapes.forEach((sh) => sh.getPoints(24).forEach((p) => {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  }));
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
+  // Same Y-down (SVG) -> Y-up (scene) flip as getDotIconShapes().
+  const normalize = (sh) => {
+    const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: -(p.y - cy) * s }));
+    const ns = new THREE.Shape();
+    pts.forEach((p, i) => (i === 0 ? ns.moveTo(p.x, p.y) : ns.lineTo(p.x, p.y)));
+    ns.closePath();
+    ns.holes = (sh.holes || []).map((h) => {
+      const hPts = h.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: -(p.y - cy) * s }));
+      const hs = new THREE.Path();
+      hPts.forEach((p, i) => (i === 0 ? hs.moveTo(p.x, p.y) : hs.lineTo(p.x, p.y)));
+      hs.closePath();
+      return hs;
+    });
+    return ns;
+  };
+
+  const regions = [...buckets.entries()].map(([colorHex, shapes]) => ({
+    colorHex,
+    shapes: shapes.map(normalize),
+    included: true,
+  }));
+  return { regions, skipped };
 }
 
 // Identifies the tittle (dot) among a character's raw glyph shapes: the
@@ -2343,9 +2734,13 @@ function attachKeyringToShape(shape, plateW, plateH, keyring, textSize) {
   newShape.closePath();
   newShape.holes = shape.holes;
 
+  // Clamp the hole to leave at least ~0.6mm of material around it inside the
+  // tab - an unclamped hole bigger than the tab blows straight through it
+  // into the neck/plate instead of sitting inside a proper loop.
+  const holeR = Math.min(keyring.holeDiameter / 2, tabR - 0.6);
   anchors.forEach(anchor => {
     const hole = new THREE.Path();
-    hole.absarc(anchor.x, anchor.y, keyring.holeDiameter / 2, 0, Math.PI * 2, false);
+    hole.absarc(anchor.x, anchor.y, holeR, 0, Math.PI * 2, false);
     newShape.holes.push(hole);
   });
 
@@ -2427,11 +2822,14 @@ function buildContourShapes(layout, marginMM, keyring, connect, textSize) {
     return shape;
   });
 
+  // Same clamp as attachKeyringToShape() - the contour offset also grows the
+  // tab outward by marginMM, so the effective radius includes that margin.
+  const contourHoleR = keyring ? Math.min(keyring.holeDiameter / 2, keyring.tabDiameter / 2 + marginMM - 0.6) : 0;
   anchors.forEach(anchor => {
     const host = shapes.find(s => pointInPolygon(anchor, s._pts));
     if (host) {
       const hole = new THREE.Path();
-      hole.absarc(anchor.x, anchor.y, keyring.holeDiameter / 2, 0, Math.PI * 2, false);
+      hole.absarc(anchor.x, anchor.y, contourHoleR, 0, Math.PI * 2, false);
       host.holes.push(hole);
     }
   });
@@ -2496,7 +2894,7 @@ async function rebuild() {
   // script - e.g. this CDN's CJK/Cyrillic font packages turned out to only
   // carry a basic Latin subset despite the family name. Rather than let
   // those characters silently vanish, tell the user which ones are missing.
-  {
+  if (contentMode === 'text') {
     const glyphs = font.data && font.data.glyphs;
     const allText = els.text.value + els.topText.value + els.bottomText.value;
     const missing = [...new Set(Array.from(allText).filter((ch) => ch.trim() !== '' && glyphs && !glyphs[ch]))];
@@ -2507,6 +2905,8 @@ async function rebuild() {
     } else {
       warnEl.style.display = 'none';
     }
+  } else {
+    document.getElementById('glyphWarning').style.display = 'none';
   }
 
   // The geometry build below is synchronous and can take a noticeable beat
@@ -2520,12 +2920,13 @@ async function rebuild() {
   // await (and the whole rebuild) forever whenever the page isn't focused.
   await new Promise((r) => setTimeout(r, 0));
 
-  const lines = els.text.value.split('\n');
-  const size = parseFloat(els.fontSize.value);
-  const spacingScale = parseFloat(els.lineSpacing.value) / 100;
-  const letterSpacing = parseFloat(els.letterSpacing.value);
-  const depth = parseFloat(els.textDepth.value);
   const plateThickness = parseFloat(els.plateThickness.value);
+  const depth = parseFloat((contentMode === 'picture' ? els.pictureDepth : els.textDepth).value);
+  const bevel = els.bevelEnabled.checked ? Math.min(parseFloat(els.bevelSize.value), plateThickness * 0.45, depth * 0.45) : 0;
+  // Shared by Engrave's pocket and Flush's pocket+insert: how deep the
+  // pocket cuts, and the solid slab height left underneath it.
+  const engraveDepth = Math.max(0.2, Math.min(depth, plateThickness - 0.4));
+  const baseHeight = plateThickness - engraveDepth;
 
   // clear previous
   while (modelGroup.children.length) {
@@ -2534,39 +2935,120 @@ async function rebuild() {
     m.material.dispose();
   }
 
-  const dotOptions = {
-    enabled: els.dotDecorEnabled.checked,
-    icon: els.dotDecorIcon.value,
-    customSvg: els.dotDecorCustomSvg.value,
-  };
-  const layout = computeLineLayout(font, lines, size, lineScales, spacingScale, letterSpacing, dotOptions);
-  const bevel = els.bevelEnabled.checked ? Math.min(parseFloat(els.bevelSize.value), plateThickness * 0.45, depth * 0.45) : 0;
-  const textGeoms = buildTextGeometries(layout, font, depth, bevel);
-  // Contour/keyring geometry (neck width, bridge width) needs one representative
-  // size; use the largest line so those stay printable even with a tiny line mixed in.
-  const maxLineSize = layout.reduce((m, ld) => ld ? Math.max(m, ld.size) : m, size);
-  let textWidth = size * 4, textHeight = size * 1.6;
-  let textCenterX = 0, textCenterY = 0;
-  let mergedTextGeo = null;
-  if (textGeoms.length) {
-    mergedTextGeo = textGeoms.length > 1 ? mergeGeometries(textGeoms, false) : textGeoms[0];
-    mergedTextGeo.computeBoundingBox();
-    const bb = mergedTextGeo.boundingBox;
-    textWidth = bb.max.x - bb.min.x;
-    textHeight = bb.max.y - bb.min.y;
-    textCenterX = (bb.min.x + bb.max.x) / 2;
-    textCenterY = (bb.min.y + bb.max.y) / 2;
-  }
-
-  // Needed both to place the raised text mesh (Emboss) and to position the
-  // glyph cuts (Engrave/Die Cut) in the same final coordinate space as the
-  // plate, before the plate shapes are built below.
-  const offX = shapeMode === 'contour' ? 0 : (els.centerH.checked ? 0 : parseFloat(els.offsetX.value) || 0) - textCenterX;
-  const offY = shapeMode === 'contour' ? 0 : (els.centerV.checked ? 0 : parseFloat(els.offsetY.value) || 0) - textCenterY;
+  // contentRegions: unified list the mesh-building/export code below iterates
+  // over, regardless of mode - one entry per raised/cut color region.
+  // Text mode has exactly one (the merged text+border geometry); Picture Tag
+  // mode has one per included SVG color region.
+  let contentRegions = [];
+  let maxLineSize, textWidth, textHeight, textCenterX = 0, textCenterY = 0, offX = 0, offY = 0;
   let glyphOutlines = [], glyphCounters = [];
-  if (textStyle !== 'emboss') {
-    glyphOutlines = getLetterPolygons(layout).map(p => shiftPoly(p, offX, offY));
-    glyphCounters = getGlyphCounters(layout).map(p => shiftPoly(p, offX, offY));
+  let layout = []; // only meaningful in text mode; buildContourShapes/keyring code below reads it
+
+  if (contentMode === 'text') {
+    const lines = els.text.value.split('\n');
+    const size = parseFloat(els.fontSize.value);
+    const spacingScale = parseFloat(els.lineSpacing.value) / 100;
+    const letterSpacing = parseFloat(els.letterSpacing.value);
+    const dotOptions = {
+      enabled: els.dotDecorEnabled.checked,
+      icon: els.dotDecorIcon.value,
+      customSvg: els.dotDecorCustomSvg.value,
+    };
+    layout = computeLineLayout(font, lines, size, lineScales, spacingScale, letterSpacing, dotOptions);
+    // Flush extrudes the same shapes only as deep as the pocket it sits in
+    // (engraveDepth), not the full raised "depth" - and skips beveling,
+    // which would leave a stepped edge instead of a truly flush surface.
+    const contentDepth = textStyle === 'flush' ? engraveDepth : depth;
+    const contentBevel = textStyle === 'flush' ? 0 : bevel;
+    const textGeoms = buildTextGeometries(layout, font, contentDepth, contentBevel);
+    // Contour/keyring geometry (neck width, bridge width) needs one representative
+    // size; use the largest line so those stay printable even with a tiny line mixed in.
+    maxLineSize = layout.reduce((m, ld) => ld ? Math.max(m, ld.size) : m, size);
+    textWidth = size * 4; textHeight = size * 1.6;
+    let mergedTextGeo = null;
+    if (textGeoms.length) {
+      mergedTextGeo = textGeoms.length > 1 ? mergeGeometries(textGeoms, false) : textGeoms[0];
+      mergedTextGeo.computeBoundingBox();
+      const bb = mergedTextGeo.boundingBox;
+      textWidth = bb.max.x - bb.min.x;
+      textHeight = bb.max.y - bb.min.y;
+      textCenterX = (bb.min.x + bb.max.x) / 2;
+      textCenterY = (bb.min.y + bb.max.y) / 2;
+    }
+
+    // Needed both to place the raised text mesh (Emboss) and to position the
+    // glyph cuts (Engrave/Die Cut) in the same final coordinate space as the
+    // plate, before the plate shapes are built below.
+    offX = shapeMode === 'contour' ? 0 : (els.centerH.checked ? 0 : parseFloat(els.offsetX.value) || 0) - textCenterX;
+    offY = shapeMode === 'contour' ? 0 : (els.centerV.checked ? 0 : parseFloat(els.offsetY.value) || 0) - textCenterY;
+    if (textStyle !== 'emboss') {
+      glyphOutlines = getLetterPolygons(layout).map(p => shiftPoly(p, offX, offY));
+      glyphCounters = getGlyphCounters(layout).map(p => shiftPoly(p, offX, offY));
+    }
+    if (mergedTextGeo && (textStyle === 'emboss' || textStyle === 'flush')) {
+      contentRegions.push({ geo: mergedTextGeo, colorHex: els.textColor.value, label: 'text', z: textStyle === 'flush' ? baseHeight : plateThickness });
+    }
+  } else {
+    // Picture Tag: normalized region shapes (longer dimension = 1 unit,
+    // already centered on the origin - see parsePictureSvg()) get scaled by
+    // the picture-size slider (mm) and extruded, one geometry per color.
+    const regions = (pictureData ? pictureData.regions : []).filter(r => r.included);
+    let pictureSize;
+    if (els.pictureFitToPlate.checked) {
+      // Solve for the uniform scale that fills the plate's usable area
+      // (plate size minus padding) without distorting the picture's own
+      // aspect ratio - the plate is the independent variable here (autoFit
+      // is forced off whenever this is on), unlike the manual-mm slider path.
+      let uMinX = Infinity, uMaxX = -Infinity, uMinY = Infinity, uMaxY = -Infinity;
+      regions.forEach(r => r.shapes.forEach(sh => sh.getPoints(24).forEach(p => {
+        uMinX = Math.min(uMinX, p.x); uMaxX = Math.max(uMaxX, p.x);
+        uMinY = Math.min(uMinY, p.y); uMaxY = Math.max(uMaxY, p.y);
+      })));
+      const unitW = uMaxX - uMinX, unitH = uMaxY - uMinY;
+      const pad = parseFloat(els.padding.value) || 0;
+      const availW = Math.max((parseFloat(els.plateWidth.value) || 10) - pad * 2, 1);
+      const availH = Math.max((parseFloat(els.plateHeight.value) || 10) - pad * 2, 1);
+      pictureSize = (unitW > 0 && unitH > 0) ? Math.min(availW / unitW, availH / unitH) : parseFloat(els.pictureScale.value);
+    } else {
+      pictureSize = parseFloat(els.pictureScale.value);
+    }
+    const scaledShapesPerRegion = regions.map(r => ({
+      colorHex: r.colorHex,
+      shapes: r.shapes.map(sh => scaleAndShiftShape(sh, pictureSize)),
+    }));
+    const allShapes = scaledShapesPerRegion.flatMap(r => r.shapes);
+    maxLineSize = pictureSize;
+    textWidth = pictureSize; textHeight = pictureSize;
+    if (allShapes.length) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      allShapes.forEach(sh => sh.getPoints(24).forEach(p => {
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+      }));
+      textWidth = maxX - minX; textHeight = maxY - minY;
+    }
+    if (textStyle !== 'emboss') {
+      glyphOutlines = getLetterPolygons(scaledShapesPerRegion.map(r => ({ shapes: r.shapes, xOff: 0, yOff: 0 })));
+      glyphCounters = getGlyphCounters(scaledShapesPerRegion.map(r => ({ shapes: r.shapes, xOff: 0, yOff: 0 })));
+      if (textStyle === 'flush') {
+        // Same idea as text mode's Flush: fill the pocket exactly (engraveDepth,
+        // no bevel) instead of a full raised bump, sitting flush at baseHeight.
+        scaledShapesPerRegion.forEach((r, i) => {
+          if (!r.shapes.length) return;
+          const geo = new THREE.ExtrudeGeometry(r.shapes, { depth: engraveDepth, curveSegments: 24 });
+          contentRegions.push({ geo, colorHex: r.colorHex, label: `region${i + 1}`, z: baseHeight });
+        });
+      }
+    } else {
+      scaledShapesPerRegion.forEach((r, i) => {
+        if (!r.shapes.length) return;
+        const geo = new THREE.ExtrudeGeometry(r.shapes, {
+          depth, curveSegments: 24,
+          bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, bevelOffset: 0,
+        });
+        contentRegions.push({ geo, colorHex: r.colorHex, label: `region${i + 1}` });
+      });
+    }
   }
 
   let plateW, plateH, plateShapes;
@@ -2575,7 +3057,7 @@ async function rebuild() {
   // entirely self-fitting to the main text. Build it now, centered at
   // (0,0), so auto-fit sizing below can account for the extra space it
   // needs - fixing it up after sizing would let it overflow the plate.
-  const includeBorder = shapeMode !== 'contour';
+  const includeBorder = shapeMode !== 'contour' && contentMode === 'text';
   const borderSize = parseFloat(els.borderTextSize.value);
   const borderDepth = parseFloat(els.borderTextDepth.value);
   const topGeo = includeBorder ? buildBorderTextGeometry(font, els.topText.value, borderSize, borderDepth, bevel) : null;
@@ -2646,10 +3128,11 @@ async function rebuild() {
   }
 
   let plateGeo;
-  if (textStyle === 'engrave' && glyphOutlines.length) {
-    const engraveDepth = Math.max(0.2, Math.min(depth, plateThickness - 0.4));
-    const baseHeight = plateThickness - engraveDepth;
-    const topShapes = plateShapes.map(cloneShapeWithHoles);
+  if ((textStyle === 'engrave' || textStyle === 'flush') && glyphOutlines.length) {
+    // Not plateShapes.map(cloneShapeWithHoles) - Array.map passes (shape,
+    // index, array) and cloneShapeWithHoles's 2nd/3rd params are (dx, dy),
+    // so the whole array would silently become "dy" for every shape.
+    const topShapes = plateShapes.map((s) => cloneShapeWithHoles(s));
     cutGlyphsIntoShapes(topShapes, glyphOutlines, glyphCounters);
     const baseGeo = new THREE.ExtrudeGeometry(plateShapes, { depth: baseHeight, curveSegments: 24 });
     const topGeo = new THREE.ExtrudeGeometry(topShapes, { depth: engraveDepth, curveSegments: 24 });
@@ -2677,22 +3160,30 @@ async function rebuild() {
     borderGeoms.push(bottomGeo);
   }
 
-  // Engrave/Die Cut have no separate raised main-text mesh - the lines are
-  // cut into the plate itself above. Border captions stay raised regardless.
-  if (textStyle !== 'emboss') mergedTextGeo = null;
-  else if (mergedTextGeo) {
-    mergedTextGeo.translate(offX, offY, 0);
+  // Position the main content region (Emboss only - Engrave/Die Cut already
+  // cut the shapes into the plate above and contentRegions has no 'text'/
+  // picture-region entries in that case). Border captions stay raised
+  // regardless of textStyle, folded into the same region if one exists.
+  const mainRegion = contentRegions.find(r => r.label === 'text');
+  if (mainRegion) mainRegion.geo.translate(offX, offY, 0);
+  if (borderGeoms.length) {
+    // Border captions always sit raised on top (their own borderTextDepth
+    // slider) regardless of the main text's style - only merge them into
+    // the main region when both actually share the same z (Emboss), since
+    // a Flush main region sits lower and would drag the border down with it.
+    if (mainRegion && (mainRegion.z === undefined || mainRegion.z === plateThickness)) {
+      mainRegion.geo = mergeGeometries([mainRegion.geo, ...borderGeoms], false);
+    } else {
+      const borderGeo = borderGeoms.length > 1 ? mergeGeometries(borderGeoms, false) : borderGeoms[0];
+      contentRegions.push({ geo: borderGeo, colorHex: els.textColor.value, label: mainRegion ? 'border' : 'text', z: plateThickness });
+    }
   }
 
-  const allTextGeoms = [mergedTextGeo, ...borderGeoms].filter(Boolean);
-  if (allTextGeoms.length) {
-    const finalTextGeo = allTextGeoms.length > 1 ? mergeGeometries(allTextGeoms, false) : allTextGeoms[0];
-    finalTextGeo.translate(0, 0, plateThickness);
-    mergedTextGeo = finalTextGeo;
-    const textMat = new THREE.MeshStandardMaterial({ color: els.textColor.value, roughness: 0.5, metalness: 0.05 });
-    const textMesh = new THREE.Mesh(mergedTextGeo, textMat);
-    modelGroup.add(textMesh);
-  }
+  contentRegions.forEach((r) => {
+    r.geo.translate(0, 0, r.z !== undefined ? r.z : plateThickness);
+    const mat = new THREE.MeshStandardMaterial({ color: r.colorHex, roughness: 0.5, metalness: 0.05 });
+    modelGroup.add(new THREE.Mesh(r.geo, mat));
+  });
 
   // frame camera target roughly on model
   controls.target.set(0, 0, plateThickness / 2);
@@ -2703,7 +3194,11 @@ async function rebuild() {
     rebuild._framed = true;
   }
 
-  lastExportData = { plateGeo: plateGeo.clone(), textGeo: mergedTextGeo ? mergedTextGeo.clone() : null };
+  lastExportData = {
+    plateGeo: plateGeo.clone(),
+    contentGeoms: contentRegions.map(r => ({ label: r.label, geo: r.geo.clone() })),
+  };
+  document.getElementById('exportSeparate').textContent = t('button.exportSeparate', { n: 1 + contentRegions.length });
   renderStatus.style.display = 'none';
 }
 
@@ -2719,8 +3214,7 @@ function download(blob, filename) {
 
 document.getElementById('exportCombined').addEventListener('click', () => {
   if (!lastExportData) return;
-  const geoms = [lastExportData.plateGeo.clone()];
-  if (lastExportData.textGeo) geoms.push(lastExportData.textGeo.clone());
+  const geoms = [lastExportData.plateGeo.clone(), ...lastExportData.contentGeoms.map(c => c.geo.clone())];
   const merged = geoms.length > 1 ? mergeGeometries(geoms, false) : geoms[0];
   const mesh = new THREE.Mesh(merged, new THREE.MeshStandardMaterial());
   const stl = exporter.parse(mesh, { binary: true });
@@ -2729,16 +3223,14 @@ document.getElementById('exportCombined').addEventListener('click', () => {
 
 document.getElementById('exportSeparate').addEventListener('click', () => {
   if (!lastExportData) return;
-  const plateMesh = new THREE.Mesh(lastExportData.plateGeo.clone(), new THREE.MeshStandardMaterial());
-  const plateStl = exporter.parse(plateMesh, { binary: true });
-  download(new Blob([plateStl], { type: 'application/octet-stream' }), 'nameplate_body.stl');
-  if (lastExportData.textGeo) {
+  const files = [{ label: 'body', geo: lastExportData.plateGeo }, ...lastExportData.contentGeoms];
+  files.forEach((f, i) => {
     setTimeout(() => {
-      const textMesh = new THREE.Mesh(lastExportData.textGeo.clone(), new THREE.MeshStandardMaterial());
-      const textStl = exporter.parse(textMesh, { binary: true });
-      download(new Blob([textStl], { type: 'application/octet-stream' }), 'nameplate_text.stl');
-    }, 400);
-  }
+      const mesh = new THREE.Mesh(f.geo.clone(), new THREE.MeshStandardMaterial());
+      const stl = exporter.parse(mesh, { binary: true });
+      download(new Blob([stl], { type: 'application/octet-stream' }), `nameplate_${f.label}.stl`);
+    }, i * 400);
+  });
 });
 
 // ---------- about modal ----------
@@ -2755,6 +3247,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverl
 
 // ---------- init ----------
 updateDotDecorUI();
+updateContentModeUI();
 applyI18n();
 applyPreset('bubble');
 </script>
