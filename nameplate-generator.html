@@ -751,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.16</div>
+    <div id="viewportVersion">v2.17</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -2459,13 +2459,14 @@ function stripHiddenSvgElements(svgText) {
   return new XMLSerializer().serializeToString(svgEl);
 }
 
-// Normalizes a list of shapes into ONE shared coordinate frame (not
-// per-shape like getDotIconShapes()) so regions keep their positions
-// relative to each other: longer bbox dimension -> 1 unit, centered on the
-// origin. Shared by parsePictureSvg() (SVG, Y-down source space) and
-// traceRasterToRegions() (raster trace, also Y-down/canvas space) - both
-// pass flipY=true to match the scene's Y-up convention.
-function normalizeShapesToUnitBox(shapes, flipY) {
+// Computes the shared unit-box transform (longer bbox dimension -> 1 unit,
+// centered on the origin) from ALL regions' shapes combined - callers must
+// compute this ONCE over every bucket together and apply the SAME transform
+// to each bucket individually with applyUnitBoxTransform() below. Computing
+// a separate transform per color bucket (each normalized to its own bbox)
+// silently discards every region's position relative to the others - every
+// color would re-center on its own, independent of what the others do.
+function computeUnitBoxTransform(shapes) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   shapes.forEach((sh) => sh.getPoints(24).forEach((p) => {
     minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
@@ -2473,6 +2474,15 @@ function normalizeShapesToUnitBox(shapes, flipY) {
   }));
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
   const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
+  return { cx, cy, s };
+}
+
+// Applies a transform from computeUnitBoxTransform() to one region's shapes.
+// Used by parsePictureSvg() (SVG, Y-down source space) and
+// traceRasterToRegions() (raster trace, also Y-down/canvas space) - both
+// pass flipY=true to match the scene's Y-up convention.
+function applyUnitBoxTransform(shapes, transform, flipY) {
+  const { cx, cy, s } = transform;
   const flip = (v) => (flipY ? -v : v);
   const normalize = (sh) => {
     const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: flip((p.y - cy) * s) }));
@@ -2528,10 +2538,13 @@ function parsePictureSvg(svgText) {
   const allShapes = [...buckets.values()].flat();
   if (!allShapes.length) return { regions: [], skipped };
 
-  // Same Y-down (SVG) -> Y-up (scene) flip as getDotIconShapes().
+  // One shared transform for every bucket, so regions keep their positions
+  // relative to each other. Same Y-down (SVG) -> Y-up (scene) flip as
+  // getDotIconShapes().
+  const transform = computeUnitBoxTransform(allShapes);
   const regions = [...buckets.entries()].map(([colorHex, shapes]) => ({
     colorHex,
-    shapes: normalizeShapesToUnitBox(shapes, true),
+    shapes: applyUnitBoxTransform(shapes, transform, true),
     included: true,
   }));
   return { regions, skipped };
@@ -2908,9 +2921,10 @@ function traceRasterToRegions(imageData, colorCount) {
 
   const allShapes = [...buckets.values()].flat();
   if (!allShapes.length) return { regions: [], skipped: [{ tag: 'image', reason: 'no traceable regions after filtering' }] };
+  const transform = computeUnitBoxTransform(allShapes);
   const regions = [...buckets.entries()].map(([colorHex, shapes]) => ({
     colorHex,
-    shapes: normalizeShapesToUnitBox(shapes, true),
+    shapes: applyUnitBoxTransform(shapes, transform, true),
     included: true,
   }));
   return { regions, skipped: [] };
