@@ -48,7 +48,7 @@
 
   .brand{padding:20px 22px 0 22px;}
   .brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .brand-logo{display:flex;align-items:center;gap:11px;min-width:0;}
+  .brand-logo{display:flex;align-items:center;gap:11px;min-width:0;cursor:pointer;}
   .brand-logo img{width:40px;height:auto;flex-shrink:0;}
   .brand h1{font-size:22px;font-weight:700;margin:0;letter-spacing:0.2px;line-height:1.1;}
   .brand h1 .three-d{color:var(--accent);font-size:14px;font-weight:700;vertical-align:super;margin-left:1px;}
@@ -305,7 +305,7 @@
   <div id="sidebar">
     <div class="brand">
       <div class="brand-row">
-        <div class="brand-logo">
+        <div class="brand-logo" id="brandLogoBtn" role="button" tabindex="0" data-i18n-title="about.buttonTitle" title="About this app">
           <img src="assets/logo.svg" alt="Tagify3D">
           <h1>Tagify<span class="three-d">3D</span></h1>
         </div>
@@ -698,7 +698,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.12</div>
+    <div id="viewportVersion">v2.13</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -2743,18 +2743,20 @@ document.getElementById('exportSeparate').addEventListener('click', () => {
 
 // ---------- about modal ----------
 const aboutOverlay = document.getElementById('aboutOverlay');
-document.getElementById('aboutBtn').addEventListener('click', () => { aboutOverlay.style.display = 'flex'; });
+function openAbout() { aboutOverlay.style.display = 'flex'; }
+document.getElementById('aboutBtn').addEventListener('click', openAbout);
+document.getElementById('brandLogoBtn').addEventListener('click', openAbout);
+document.getElementById('brandLogoBtn').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAbout(); }
+});
 document.getElementById('aboutClose').addEventListener('click', () => { aboutOverlay.style.display = 'none'; });
 aboutOverlay.addEventListener('click', (e) => { if (e.target === aboutOverlay) aboutOverlay.style.display = 'none'; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutOverlay.style.display = 'none'; });
 
 // ---------- init ----------
-updateShapeUI();
-updateTextStyleUI();
 updateDotDecorUI();
-renderLineScales();
 applyI18n();
-rebuild();
+applyPreset('bubble');
 </script>
 </body>
 </html>
