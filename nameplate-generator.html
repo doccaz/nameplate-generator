@@ -708,6 +708,8 @@
               <button data-side="left" class="active" data-i18n="keyring.left">Left end</button>
               <button data-side="right" data-i18n="keyring.right">Right end</button>
               <button data-side="both" data-i18n="keyring.both">Both ends</button>
+              <button data-side="top" data-i18n="keyring.top">Top center</button>
+              <button data-side="top-both" data-i18n="keyring.topBoth">Top ends</button>
             </div>
           </div>
           <div class="row row-split">
@@ -751,7 +753,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.20</div>
+    <div id="viewportVersion">v2.21</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -903,6 +905,8 @@ const TRANSLATIONS = {
     'keyring.left': 'Left end',
     'keyring.right': 'Right end',
     'keyring.both': 'Both ends',
+    'keyring.top': 'Top center',
+    'keyring.topBoth': 'Top ends',
     'field.loopDiameter': 'Loop diameter',
     'field.plate': 'Plate',
     'field.text': 'Text',
@@ -1057,6 +1061,8 @@ const TRANSLATIONS = {
     'keyring.left': 'Ponta esquerda',
     'keyring.right': 'Ponta direita',
     'keyring.both': 'Ambas as pontas',
+    'keyring.top': 'Centro superior',
+    'keyring.topBoth': 'Pontas superiores',
     'field.loopDiameter': 'Diâmetro da argola',
     'field.plate': 'Placa',
     'field.text': 'Texto',
@@ -1211,6 +1217,8 @@ const TRANSLATIONS = {
     'keyring.left': 'Extremo izquierdo',
     'keyring.right': 'Extremo derecho',
     'keyring.both': 'Ambos extremos',
+    'keyring.top': 'Centro superior',
+    'keyring.topBoth': 'Extremos superiores',
     'field.loopDiameter': 'Diámetro de la argolla',
     'field.plate': 'Placa',
     'field.text': 'Texto',
@@ -3234,23 +3242,29 @@ function buildConnectorBridges(polys, marginMM, textSize) {
   return bridges;
 }
 
-// Attaches a keyring loop (or two, for "both ends") to any plate shape by
-// building a bump + connecting neck near its edge, then boolean-unioning
-// them onto the plate outline with ClipperLib. Original holes (mounting
-// holes etc.) are preserved on the resulting shape.
+// Attaches a keyring loop (or two, for "both ends"/"top ends") to any plate
+// shape by building a bump + connecting neck near its edge, then
+// boolean-unioning them onto the plate outline with ClipperLib. Original
+// holes (mounting holes etc.) are preserved on the resulting shape.
 function attachKeyringToShape(shape, plateW, plateH, keyring, textSize) {
   if (typeof ClipperLib === 'undefined') return shape;
   const boundary = shape.getPoints(64).map(p => ({ x: p.x, y: p.y }));
   const rMinX = -plateW / 2, rMaxX = plateW / 2, rMaxY = plateH / 2;
   const tabR = keyring.tabDiameter / 2;
-  const sides = keyring.side === 'both' ? ['left', 'right'] : [keyring.side];
+  const sides = keyring.side === 'both' ? ['left', 'right']
+    : keyring.side === 'top-both' ? ['top-left', 'top-right']
+    : [keyring.side];
 
   const subjectPaths = [boundary];
   const anchors = [];
   sides.forEach(side => {
     const gap = tabR * 0.6;
-    const anchorX = side === 'left' ? rMinX - gap : rMaxX + gap;
-    const anchor = { x: anchorX, y: 0 };
+    const isTop = side === 'top' || side === 'top-left' || side === 'top-right';
+    let anchor;
+    if (side === 'top') anchor = { x: 0, y: rMaxY + gap };
+    else if (side === 'top-left') anchor = { x: rMinX + tabR * 2, y: rMaxY + gap };
+    else if (side === 'top-right') anchor = { x: rMaxX - tabR * 2, y: rMaxY + gap };
+    else anchor = { x: side === 'left' ? rMinX - gap : rMaxX + gap, y: 0 };
     anchors.push(anchor);
 
     const bump = [];
@@ -3263,12 +3277,13 @@ function attachKeyringToShape(shape, plateW, plateH, keyring, textSize) {
 
     const neckWidth = Math.max(tabR * 0.85, textSize * 0.3);
     // Plate is symmetric and centered at the origin, so the edge point at y=0
-    // is known exactly - no need to search sampled boundary points (which
-    // aren't evenly distributed and can be far from the true edge midpoint,
-    // sending the neck off at a steep diagonal).
-    const edgeX = side === 'left' ? rMinX : rMaxX;
-    const inward = side === 'left' ? 1 : -1;
-    const farPoint = { x: edgeX + inward * neckWidth, y: 0 };
+    // (or x=anchor.x on the top edge) is known exactly - no need to search
+    // sampled boundary points (which aren't evenly distributed and can be
+    // far from the true edge midpoint, sending the neck off at a steep
+    // diagonal).
+    const farPoint = isTop
+      ? { x: anchor.x, y: rMaxY - neckWidth }
+      : { x: (side === 'left' ? rMinX : rMaxX) + (side === 'left' ? 1 : -1) * neckWidth, y: 0 };
     subjectPaths.push(roundedStroke(anchor, farPoint, neckWidth));
   });
 
@@ -3327,15 +3342,20 @@ function buildContourShapes(layout, marginMM, keyring, connect, textSize) {
       rMinY = Math.min(rMinY, p.y); rMaxY = Math.max(rMaxY, p.y);
     }));
     const tabR = keyring.tabDiameter / 2;
-    const sides = keyring.side === 'both' ? ['left', 'right'] : [keyring.side];
+    const sides = keyring.side === 'both' ? ['left', 'right']
+      : keyring.side === 'top-both' ? ['top-left', 'top-right']
+      : [keyring.side];
 
     sides.forEach(side => {
       // Push the loop clearly clear of the letters (gap beyond the margin), then
       // connect it back with a narrow neck - never let the offset itself be what
       // fuses the loop to the body, or it distorts into the nearest letter.
       const gap = tabR + marginMM * 0.7;
-      const anchorX = side === 'left' ? rMinX - gap : rMaxX + gap;
-      const anchor = { x: anchorX, y: rMaxY + tabR * 0.15 };
+      let anchor;
+      if (side === 'top') anchor = { x: (rMinX + rMaxX) / 2, y: rMaxY + gap };
+      else if (side === 'top-left') anchor = { x: rMinX + tabR * 2, y: rMaxY + gap };
+      else if (side === 'top-right') anchor = { x: rMaxX - tabR * 2, y: rMaxY + gap };
+      else anchor = { x: side === 'left' ? rMinX - gap : rMaxX + gap, y: rMaxY + tabR * 0.15 };
 
       const bump = [];
       const segs = 28;
