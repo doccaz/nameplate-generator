@@ -361,10 +361,17 @@
       <div class="section" id="pictureTagSection" style="display:none;">
         <div class="section-title" data-i18n="section.pictureTag">PICTURE TAG</div>
         <div class="row">
-          <label for="pictureSvgInput" data-i18n="field.svgUpload">SVG file</label>
-          <input type="file" id="pictureSvgInput" accept=".svg,image/svg+xml">
+          <label for="pictureSvgInput" data-i18n="field.svgUpload">SVG, PNG, or JPG file</label>
+          <input type="file" id="pictureSvgInput" accept=".svg,image/svg+xml,.png,image/png,.jpg,.jpeg,image/jpeg">
           <p id="pictureSvgStatus" style="font-size:11px;color:var(--muted);margin:6px 2px 0;line-height:1.4;"></p>
           <p id="pictureSvgWarning" style="display:none;font-size:11px;color:var(--accent);margin:6px 2px 0;line-height:1.4;"></p>
+        </div>
+        <div class="row" id="pictureColorCountRow" style="display:none;">
+          <label for="pictureColorCount" data-i18n="field.pictureColorCount">Number of colors</label>
+          <div class="slidewrap">
+            <input type="range" id="pictureColorCount" min="2" max="12" step="1" value="6">
+            <span class="val" id="pictureColorCountVal">6</span>
+          </div>
         </div>
         <div class="row" id="pictureRegionsRow" style="display:none;">
           <label data-i18n="field.pictureColors">Detected colors</label>
@@ -744,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.14</div>
+    <div id="viewportVersion">v2.15</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -786,14 +793,16 @@ const TRANSLATIONS = {
     'mode.text': 'Text',
     'mode.picture': 'Picture Tag',
     'section.pictureTag': 'PICTURE TAG',
-    'field.svgUpload': 'SVG file',
+    'field.svgUpload': 'SVG, PNG, or JPG file',
+    'field.pictureColorCount': 'Number of colors',
     'field.pictureColors': 'Detected colors',
     'field.pictureScale': 'Picture size (longer side)',
     'field.pictureFit': 'Fit picture to plate',
     'tip.pictureFit': 'Scales the picture automatically to fill the current plate size (minus padding), instead of the exact size below. Turns off "Auto-fit plate" since they\'d otherwise fight each other.',
-    'status.svgLoaded': 'Loaded "{name}" — {count} color region(s) detected.',
+    'status.pictureLoaded': 'Loaded "{name}" — {count} color region(s) detected.',
     'warning.svgSkipped': 'Skipped unsupported elements: {items}.',
     'warning.svgParseFailed': 'Could not parse this file as SVG.',
+    'warning.pngParseFailed': 'Could not process this image.',
     'label.region': 'Color {n}',
     'section.text': 'TEXT',
     'section.borderText': 'BORDER TEXT',
@@ -938,14 +947,16 @@ const TRANSLATIONS = {
     'mode.text': 'Texto',
     'mode.picture': 'Plaquinha com Imagem',
     'section.pictureTag': 'PLAQUINHA COM IMAGEM',
-    'field.svgUpload': 'Arquivo SVG',
+    'field.svgUpload': 'Arquivo SVG, PNG ou JPG',
+    'field.pictureColorCount': 'Número de cores',
     'field.pictureColors': 'Cores detectadas',
     'field.pictureScale': 'Tamanho da imagem (lado maior)',
     'field.pictureFit': 'Ajustar imagem à placa',
     'tip.pictureFit': 'Escala a imagem automaticamente para preencher o tamanho atual da placa (menos a margem), em vez do tamanho exato abaixo. Desativa o "Auto-ajustar placa", já que os dois entrariam em conflito.',
-    'status.svgLoaded': '"{name}" carregado — {count} região(ões) de cor detectada(s).',
+    'status.pictureLoaded': '"{name}" carregado — {count} região(ões) de cor detectada(s).',
     'warning.svgSkipped': 'Elementos não suportados ignorados: {items}.',
     'warning.svgParseFailed': 'Não foi possível interpretar este arquivo como SVG.',
+    'warning.pngParseFailed': 'Não foi possível processar esta imagem.',
     'label.region': 'Cor {n}',
     'section.text': 'TEXTO',
     'section.borderText': 'TEXTO DE BORDA',
@@ -1090,14 +1101,16 @@ const TRANSLATIONS = {
     'mode.text': 'Texto',
     'mode.picture': 'Placa con Imagen',
     'section.pictureTag': 'PLACA CON IMAGEN',
-    'field.svgUpload': 'Archivo SVG',
+    'field.svgUpload': 'Archivo SVG, PNG o JPG',
+    'field.pictureColorCount': 'Número de colores',
     'field.pictureColors': 'Colores detectados',
     'field.pictureScale': 'Tamaño de la imagen (lado mayor)',
     'field.pictureFit': 'Ajustar imagen a la placa',
     'tip.pictureFit': 'Escala la imagen automáticamente para llenar el tamaño actual de la placa (menos el margen), en lugar del tamaño exacto de abajo. Desactiva "Auto-ajustar placa", ya que ambos entrarían en conflicto.',
-    'status.svgLoaded': 'Se cargó "{name}" — {count} región/regiones de color detectada(s).',
+    'status.pictureLoaded': 'Se cargó "{name}" — {count} región/regiones de color detectada(s).',
     'warning.svgSkipped': 'Elementos no compatibles omitidos: {items}.',
     'warning.svgParseFailed': 'No se pudo interpretar este archivo como SVG.',
+    'warning.pngParseFailed': 'No se pudo procesar esta imagen.',
     'label.region': 'Color {n}',
     'section.text': 'TEXTO',
     'section.borderText': 'TEXTO DE BORDE',
@@ -1635,6 +1648,7 @@ const els = {
   keyringHoleDiameter: document.getElementById('keyringHoleDiameter'),
   keyringTabSize: document.getElementById('keyringTabSize'),
   pictureSvgInput: document.getElementById('pictureSvgInput'),
+  pictureColorCount: document.getElementById('pictureColorCount'),
   pictureDepth: document.getElementById('pictureDepth'),
   pictureScale: document.getElementById('pictureScale'),
   pictureFitToPlate: document.getElementById('pictureFitToPlate'),
@@ -1985,35 +1999,84 @@ bindSlider(els.borderTextDepth, document.getElementById('borderTextDepthVal'), '
 
 bindSlider(els.pictureDepth, document.getElementById('pictureDepthVal'), 'mm');
 bindSlider(els.pictureScale, document.getElementById('pictureScaleVal'), 'mm');
+
+let lastRasterImageData = null; // decoded ImageData of the currently loaded PNG/JPG, kept around so the "Number of colors" slider can re-trace without re-uploading
+let lastRasterFileName = '';
+
+function updatePictureStatus(regions, skipped, fileName) {
+  const status = document.getElementById('pictureSvgStatus');
+  const warning = document.getElementById('pictureSvgWarning');
+  status.textContent = t('status.pictureLoaded', { count: regions.length, name: fileName });
+  if (skipped.length) {
+    warning.style.display = 'block';
+    warning.textContent = t('warning.svgSkipped', {
+      items: skipped.map(s => `${s.tag} (${s.reason})`).join(', '),
+    });
+  } else {
+    warning.style.display = 'none';
+    warning.textContent = '';
+  }
+}
+
+function showPictureError(key) {
+  pictureData = null;
+  document.getElementById('pictureSvgStatus').textContent = '';
+  const warning = document.getElementById('pictureSvgWarning');
+  warning.style.display = 'block';
+  warning.textContent = t(key);
+}
+
+function retraceRasterPicture() {
+  if (!lastRasterImageData) return;
+  const colorCount = parseInt(els.pictureColorCount.value, 10) || 6;
+  try {
+    pictureData = traceRasterToRegions(lastRasterImageData, colorCount);
+    updatePictureStatus(pictureData.regions, pictureData.skipped, lastRasterFileName);
+  } catch (e) {
+    showPictureError('warning.pngParseFailed');
+  }
+  renderPictureRegions();
+  scheduleRebuild();
+}
+
 els.pictureSvgInput.addEventListener('change', () => {
   const file = els.pictureSvgInput.files[0];
   if (!file) return;
+  const isRaster = /^image\/(png|jpe?g)$/i.test(file.type) || /\.(png|jpe?g)$/i.test(file.name);
+  document.getElementById('pictureColorCountRow').style.display = isRaster ? 'block' : 'none';
+
+  if (isRaster) {
+    lastRasterImageData = null;
+    createImageBitmap(file)
+      .then((bitmap) => {
+        lastRasterImageData = decodeImageToImageData(bitmap, RASTER_MAX_DIM);
+        lastRasterFileName = file.name;
+        retraceRasterPicture();
+      })
+      .catch(() => { showPictureError('warning.pngParseFailed'); renderPictureRegions(); scheduleRebuild(); });
+    return;
+  }
+
+  lastRasterImageData = null;
   const reader = new FileReader();
   reader.onload = () => {
-    const status = document.getElementById('pictureSvgStatus');
-    const warning = document.getElementById('pictureSvgWarning');
     try {
       pictureData = parsePictureSvg(reader.result);
-      status.textContent = t('status.svgLoaded', { count: pictureData.regions.length, name: file.name });
-      if (pictureData.skipped.length) {
-        warning.style.display = 'block';
-        warning.textContent = t('warning.svgSkipped', {
-          items: pictureData.skipped.map(s => `${s.tag} (${s.reason})`).join(', '),
-        });
-      } else {
-        warning.style.display = 'none';
-        warning.textContent = '';
-      }
+      updatePictureStatus(pictureData.regions, pictureData.skipped, file.name);
     } catch (e) {
-      pictureData = null;
-      status.textContent = '';
-      warning.style.display = 'block';
-      warning.textContent = t('warning.svgParseFailed');
+      showPictureError('warning.svgParseFailed');
     }
     renderPictureRegions();
     scheduleRebuild();
   };
   reader.readAsText(file);
+});
+
+let colorCountDebounce = null;
+els.pictureColorCount.addEventListener('input', () => {
+  document.getElementById('pictureColorCountVal').textContent = els.pictureColorCount.value;
+  clearTimeout(colorCountDebounce);
+  colorCountDebounce = setTimeout(retraceRasterPicture, 250);
 });
 
 function renderPictureRegions() {
@@ -2396,6 +2459,38 @@ function stripHiddenSvgElements(svgText) {
   return new XMLSerializer().serializeToString(svgEl);
 }
 
+// Normalizes a list of shapes into ONE shared coordinate frame (not
+// per-shape like getDotIconShapes()) so regions keep their positions
+// relative to each other: longer bbox dimension -> 1 unit, centered on the
+// origin. Shared by parsePictureSvg() (SVG, Y-down source space) and
+// traceRasterToRegions() (raster trace, also Y-down/canvas space) - both
+// pass flipY=true to match the scene's Y-up convention.
+function normalizeShapesToUnitBox(shapes, flipY) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  shapes.forEach((sh) => sh.getPoints(24).forEach((p) => {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  }));
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
+  const flip = (v) => (flipY ? -v : v);
+  const normalize = (sh) => {
+    const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: flip((p.y - cy) * s) }));
+    const ns = new THREE.Shape();
+    pts.forEach((p, i) => (i === 0 ? ns.moveTo(p.x, p.y) : ns.lineTo(p.x, p.y)));
+    ns.closePath();
+    ns.holes = (sh.holes || []).map((h) => {
+      const hPts = h.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: flip((p.y - cy) * s) }));
+      const hs = new THREE.Path();
+      hPts.forEach((p, i) => (i === 0 ? hs.moveTo(p.x, p.y) : hs.lineTo(p.x, p.y)));
+      hs.closePath();
+      return hs;
+    });
+    return ns;
+  };
+  return shapes.map(normalize);
+}
+
 // Parses an uploaded multi-path SVG (Picture Tag mode) into per-color region
 // groups, unlike getDotIconShapes() above which flattens everything into one
 // flat shape array and discards per-path fill color entirely. Every kept
@@ -2433,35 +2528,342 @@ function parsePictureSvg(svgText) {
   const allShapes = [...buckets.values()].flat();
   if (!allShapes.length) return { regions: [], skipped };
 
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  allShapes.forEach((sh) => sh.getPoints(24).forEach((p) => {
-    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
-  }));
-  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  const s = 1 / Math.max(maxX - minX, maxY - minY, 0.001);
   // Same Y-down (SVG) -> Y-up (scene) flip as getDotIconShapes().
-  const normalize = (sh) => {
-    const pts = sh.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: -(p.y - cy) * s }));
-    const ns = new THREE.Shape();
-    pts.forEach((p, i) => (i === 0 ? ns.moveTo(p.x, p.y) : ns.lineTo(p.x, p.y)));
-    ns.closePath();
-    ns.holes = (sh.holes || []).map((h) => {
-      const hPts = h.getPoints(24).map((p) => ({ x: (p.x - cx) * s, y: -(p.y - cy) * s }));
-      const hs = new THREE.Path();
-      hPts.forEach((p, i) => (i === 0 ? hs.moveTo(p.x, p.y) : hs.lineTo(p.x, p.y)));
-      hs.closePath();
-      return hs;
-    });
-    return ns;
-  };
-
   const regions = [...buckets.entries()].map(([colorHex, shapes]) => ({
     colorHex,
-    shapes: shapes.map(normalize),
+    shapes: normalizeShapesToUnitBox(shapes, true),
     included: true,
   }));
   return { regions, skipped };
+}
+
+// ---- Raster (PNG/JPG) Picture Tag import ----------------------------------
+//
+// SVG import above gets per-color shapes for free from the file's own <path
+// fill="..."> data. A raster image has no such structure, so this pipeline
+// rebuilds it: quantize pixels into N dominant colors (k-means), then for
+// each color trace its binary mask into polygon(s) via marching squares,
+// nesting loops into shape/hole pairs by point-in-polygon containment -
+// deliberately NOT by segment winding, same lesson as subPathsToShapes()
+// above (real-world winding can't be trusted, geometric nesting can).
+
+const RASTER_MAX_DIM = 512; // downsample cap - plate output is mm-scale, not print resolution, and this keeps k-means/marching-squares fast
+const RASTER_ALPHA_THRESHOLD = 32; // 0-255; pixels this transparent or more are treated as background, not a color region
+
+// Downscales the decoded image into an offscreen canvas capped to
+// RASTER_MAX_DIM on its longer side and returns its ImageData.
+function decodeImageToImageData(bitmap, maxDim) {
+  const iw = bitmap.width, ih = bitmap.height;
+  const scale = Math.min(1, maxDim / Math.max(iw, ih));
+  const w = Math.max(1, Math.round(iw * scale)), h = Math.max(1, Math.round(ih * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  return ctx.getImageData(0, 0, w, h);
+}
+
+// Lloyd's-algorithm k-means with farthest-point seeding (spreads initial
+// centroids out instead of risking two random picks landing on the same
+// dominant color and leaving a real region uncovered).
+function kmeansQuantize(samples, k, iterations = 10) {
+  const n = samples.length / 3;
+  k = Math.max(1, Math.min(k, n));
+  const centroids = [];
+  const first = Math.floor(Math.random() * n);
+  centroids.push([samples[first * 3], samples[first * 3 + 1], samples[first * 3 + 2]]);
+  const distSq = new Float64Array(n).fill(Infinity);
+  for (let c = 1; c < k; c++) {
+    const [cr, cg, cb] = centroids[c - 1];
+    for (let i = 0; i < n; i++) {
+      const dr = samples[i * 3] - cr, dg = samples[i * 3 + 1] - cg, db = samples[i * 3 + 2] - cb;
+      const d = dr * dr + dg * dg + db * db;
+      if (d < distSq[i]) distSq[i] = d;
+    }
+    let best = 0, bestD = -1;
+    for (let i = 0; i < n; i++) if (distSq[i] > bestD) { bestD = distSq[i]; best = i; }
+    centroids.push([samples[best * 3], samples[best * 3 + 1], samples[best * 3 + 2]]);
+  }
+  const assign = new Int32Array(n);
+  for (let iter = 0; iter < iterations; iter++) {
+    for (let i = 0; i < n; i++) {
+      let best = 0, bestD = Infinity;
+      for (let c = 0; c < centroids.length; c++) {
+        const dr = samples[i * 3] - centroids[c][0], dg = samples[i * 3 + 1] - centroids[c][1], db = samples[i * 3 + 2] - centroids[c][2];
+        const d = dr * dr + dg * dg + db * db;
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      assign[i] = best;
+    }
+    const sums = centroids.map(() => [0, 0, 0, 0]);
+    for (let i = 0; i < n; i++) {
+      const s = sums[assign[i]];
+      s[0] += samples[i * 3]; s[1] += samples[i * 3 + 1]; s[2] += samples[i * 3 + 2]; s[3]++;
+    }
+    sums.forEach((s, c) => { if (s[3] > 0) centroids[c] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]]; });
+  }
+  return centroids;
+}
+
+// Closed-loop Douglas-Peucker simplification. Splits the loop into two open
+// chains at point[0] and its opposite point[mid] - NOT at "point[0] twice"
+// (points[0]..points[0]) the way running RDP on a single duplicated-start
+// chain would: that gives an open RDP call a zero-length baseline (both
+// ends are the same point), which makes every point's distance to that
+// "line" come out as 0 and collapses the entire loop to one point. Two
+// genuinely distinct anchors avoids that degenerate baseline.
+function simplifyPolygon(points, epsilon) {
+  const n = points.length;
+  if (n <= 4) return points;
+  const mid = Math.floor(n / 2);
+  const rdp = (pts) => {
+    if (pts.length <= 2) return pts;
+    let maxD = -1, idx = -1;
+    const p0 = pts[0], p1 = pts[pts.length - 1];
+    const dx = p1.x - p0.x, dy = p1.y - p0.y;
+    const len = Math.hypot(dx, dy) || 1;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const d = Math.abs((pts[i].x - p0.x) * dy - (pts[i].y - p0.y) * dx) / len;
+      if (d > maxD) { maxD = d; idx = i; }
+    }
+    if (maxD <= epsilon) return [p0, p1];
+    return [...rdp(pts.slice(0, idx + 1)), ...rdp(pts.slice(idx)).slice(1)];
+  };
+  const chain1 = points.slice(0, mid + 1);
+  const chain2 = points.slice(mid).concat([points[0]]);
+  const s1 = rdp(chain1);
+  const s2 = rdp(chain2);
+  return s1.slice(0, -1).concat(s2.slice(0, -1));
+}
+
+// Chaikin corner-cutting: rounds the blocky pixel-grid staircase left after
+// marching squares into a smooth curve, matching the soft/anti-aliased
+// edges a raster source actually has.
+function chaikinSmooth(points, iterations) {
+  let pts = points;
+  for (let it = 0; it < iterations; it++) {
+    if (pts.length < 3) break;
+    const next = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p0 = pts[i], p1 = pts[(i + 1) % pts.length];
+      next.push({ x: p0.x * 0.75 + p1.x * 0.25, y: p0.y * 0.75 + p1.y * 0.25 });
+      next.push({ x: p0.x * 0.25 + p1.x * 0.75, y: p0.y * 0.25 + p1.y * 0.75 });
+    }
+    pts = next;
+  }
+  return pts;
+}
+
+// Marching-squares case -> boundary-segment table. Corner bits are
+// TL*8+TR*4+BR*2+BL*1; each case lists which edge-midpoints a segment
+// connects (cases 5 and 10 are the ambiguous "diagonal" saddles - a fixed
+// pairing is picked since, unlike an isoline renderer, we don't need
+// segment direction to be consistent: hole-vs-solid below is decided by
+// point-in-polygon nesting, not by which way a loop winds).
+const MS_SEGMENTS = {
+  1: [['W', 'S']], 2: [['S', 'E']], 3: [['W', 'E']], 4: [['N', 'E']],
+  5: [['N', 'E'], ['W', 'S']], 6: [['N', 'S']], 7: [['N', 'W']], 8: [['N', 'W']],
+  9: [['N', 'S']], 10: [['N', 'W'], ['S', 'E']], 11: [['N', 'E']], 12: [['W', 'E']],
+  13: [['S', 'E']], 14: [['W', 'S']],
+};
+function msEdgePoint(cx, cy, edge) {
+  switch (edge) {
+    case 'N': return { x: cx + 0.5, y: cy };
+    case 'S': return { x: cx + 0.5, y: cy + 1 };
+    case 'W': return { x: cx, y: cy + 0.5 };
+    default: return { x: cx + 1, y: cy + 0.5 };
+  }
+}
+
+// Traces a binary mask (Uint8Array, W*H, row-major) into THREE.Shape objects
+// with holes. Walks a 1px-padded grid (so regions touching the image edge
+// still close into loops), extracts every boundary loop via marching
+// squares, drops loops under minArea (anti-aliasing/quantization speckle),
+// then nests the rest by containment - the same approach subPathsToShapes()
+// uses for SVG compound paths, reused here for the same reason.
+function traceMaskToShapes(mask, W, H, minArea) {
+  const g = (x, y) => (x < 1 || y < 1 || x > W || y > H) ? 0 : mask[(y - 1) * W + (x - 1)];
+  const segments = [];
+  for (let cy = 0; cy <= H; cy++) {
+    for (let cx = 0; cx <= W; cx++) {
+      const tl = g(cx, cy), tr = g(cx + 1, cy), br = g(cx + 1, cy + 1), bl = g(cx, cy + 1);
+      const caseIdx = tl * 8 + tr * 4 + br * 2 + bl * 1;
+      const segs = MS_SEGMENTS[caseIdx];
+      if (!segs) continue;
+      segs.forEach(([a, b]) => segments.push([msEdgePoint(cx, cy, a), msEdgePoint(cx, cy, b)]));
+    }
+  }
+  if (!segments.length) return [];
+
+  const keyOf = (p) => p.x + ',' + p.y;
+  const adj = new Map();
+  segments.forEach((seg, i) => {
+    const [a, b] = seg;
+    [[a, b], [b, a]].forEach(([from, to]) => {
+      const k = keyOf(from);
+      if (!adj.has(k)) adj.set(k, []);
+      adj.get(k).push({ point: to, segIdx: i });
+    });
+  });
+  const used = new Array(segments.length).fill(false);
+  const loops = [];
+  for (let i = 0; i < segments.length; i++) {
+    if (used[i]) continue;
+    const start = segments[i][0];
+    const startKey = keyOf(start);
+    const pts = [start];
+    used[i] = true;
+    let cur = segments[i][1];
+    let guard = segments.length + 4;
+    while (keyOf(cur) !== startKey && guard-- > 0) {
+      pts.push(cur);
+      const options = adj.get(keyOf(cur)) || [];
+      const opt = options.find((o) => !used[o.segIdx]);
+      if (!opt) break;
+      used[opt.segIdx] = true;
+      cur = opt.point;
+    }
+    if (keyOf(cur) === startKey && pts.length >= 4) loops.push(pts);
+  }
+  if (!loops.length) return [];
+
+  const areas = loops.map((l) => Math.abs(signedArea(l)));
+  const kept = loops.map((l, i) => areas[i] >= minArea);
+  const parent = loops.map((loop, i) => {
+    if (!kept[i]) return -1;
+    let best = -1, bestArea = Infinity;
+    loops.forEach((other, j) => {
+      if (i === j || !kept[j] || areas[j] <= areas[i]) return;
+      if (areas[j] < bestArea && pointInPolygon(loop[0], other)) { best = j; bestArea = areas[j]; }
+    });
+    return best;
+  });
+  const depth = loops.map(() => -1);
+  const getDepth = (i) => {
+    if (depth[i] !== -1) return depth[i];
+    depth[i] = 0; // guard against cycles before recursing
+    return (depth[i] = parent[i] === -1 ? 0 : getDepth(parent[i]) + 1);
+  };
+  loops.forEach((_, i) => { if (kept[i]) getDepth(i); });
+
+  // A near-collinear sliver loop (thin enough to clear minArea by raw area
+  // but not by shape) can simplify all the way down to a single point -
+  // THREE.Shape.closePath() throws on an empty curve list, so drop those
+  // rather than passing them through.
+  const smoothed = loops.map((l) => chaikinSmooth(simplifyPolygon(l, 1.4), 2));
+  const valid = smoothed.map((pts) => pts.length >= 3);
+  const toPoly = (Ctor, pts) => {
+    const p = new Ctor();
+    pts.forEach((pt, i) => (i === 0 ? p.moveTo(pt.x, pt.y) : p.lineTo(pt.x, pt.y)));
+    p.closePath();
+    return p;
+  };
+  const shapeByIndex = new Map();
+  const shapes = [];
+  loops.forEach((_, i) => {
+    if (kept[i] && valid[i] && depth[i] % 2 === 0) {
+      const shape = toPoly(THREE.Shape, smoothed[i]);
+      shapeByIndex.set(i, shape);
+      shapes.push(shape);
+    }
+  });
+  loops.forEach((_, i) => {
+    if (kept[i] && valid[i] && depth[i] % 2 === 1) {
+      const parentShape = shapeByIndex.get(parent[i]);
+      if (parentShape) parentShape.holes.push(toPoly(THREE.Path, smoothed[i]));
+    }
+  });
+  return shapes;
+}
+
+// Quantizes imageData into `colorCount` dominant colors and traces each into
+// region shapes, returning the same { regions, skipped } shape
+// parsePictureSvg() does so every downstream consumer (region list UI,
+// Emboss/Engrave/Die Cut/Flush, export) works unmodified.
+function traceRasterToRegions(imageData, colorCount) {
+  const { width: W, height: H, data } = imageData;
+  const n = W * H;
+
+  // Real alpha channel present? (sampled, not exhaustive - just enough to
+  // tell a genuinely transparent PNG from a flattened PNG/JPG where every
+  // alpha byte is 255.)
+  let hasAlpha = false;
+  for (let i = 3; i < data.length; i += 4 * 37) { if (data[i] < 250) { hasAlpha = true; break; } }
+
+  // No real alpha channel -> fall back to detecting a flat background color
+  // by sampling the four corners (common case: a sticker flattened onto a
+  // solid/white canvas instead of exported with transparency).
+  let bg = null;
+  if (!hasAlpha) {
+    const corners = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]].map(([x, y]) => {
+      const i = (y * W + x) * 4; return [data[i], data[i + 1], data[i + 2]];
+    });
+    const avg = corners.reduce((a, c) => [a[0] + c[0] / 4, a[1] + c[1] / 4, a[2] + c[2] / 4], [0, 0, 0]);
+    const spread = Math.max(...corners.map((c) => Math.hypot(c[0] - avg[0], c[1] - avg[1], c[2] - avg[2])));
+    if (spread < 20) bg = avg;
+  }
+
+  const isForeground = new Uint8Array(n);
+  let fgCount = 0;
+  for (let i = 0; i < n; i++) {
+    const p = i * 4;
+    if (hasAlpha && data[p + 3] < RASTER_ALPHA_THRESHOLD) continue;
+    if (bg) {
+      const dr = data[p] - bg[0], dg = data[p + 1] - bg[1], db = data[p + 2] - bg[2];
+      if (Math.hypot(dr, dg, db) < 24) continue;
+    }
+    isForeground[i] = 1;
+    fgCount++;
+  }
+  if (!fgCount) return { regions: [], skipped: [{ tag: 'image', reason: 'no opaque foreground pixels detected' }] };
+
+  // Fit centroids on a bounded sample (fast); assign every foreground pixel
+  // to its nearest one for the actual trace (accurate).
+  const maxSamples = 20000;
+  const stride = Math.max(1, Math.floor(fgCount / maxSamples));
+  const samples = [];
+  let seen = 0;
+  for (let i = 0; i < n; i++) {
+    if (!isForeground[i]) continue;
+    seen++;
+    if (seen % stride !== 0) continue;
+    const p = i * 4;
+    samples.push(data[p], data[p + 1], data[p + 2]);
+  }
+  const centroids = kmeansQuantize(samples, colorCount);
+
+  const labels = new Int32Array(n).fill(-1);
+  for (let i = 0; i < n; i++) {
+    if (!isForeground[i]) continue;
+    const p = i * 4;
+    let best = 0, bestD = Infinity;
+    for (let c = 0; c < centroids.length; c++) {
+      const dr = data[p] - centroids[c][0], dg = data[p + 1] - centroids[c][1], db = data[p + 2] - centroids[c][2];
+      const d = dr * dr + dg * dg + db * db;
+      if (d < bestD) { bestD = d; best = c; }
+    }
+    labels[i] = best;
+  }
+
+  const minArea = n * 0.005; // drop speckle/anti-aliasing noise under ~0.5% of the image area
+  const buckets = new Map(); // colorHex -> THREE.Shape[]
+  centroids.forEach((centroid, c) => {
+    const mask = new Uint8Array(n);
+    for (let i = 0; i < n; i++) mask[i] = labels[i] === c ? 1 : 0;
+    const shapes = traceMaskToShapes(mask, W, H, minArea);
+    if (!shapes.length) return;
+    const hex = '#' + centroid.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+    buckets.set(hex, shapes);
+  });
+
+  const allShapes = [...buckets.values()].flat();
+  if (!allShapes.length) return { regions: [], skipped: [{ tag: 'image', reason: 'no traceable regions after filtering' }] };
+  const regions = [...buckets.entries()].map(([colorHex, shapes]) => ({
+    colorHex,
+    shapes: normalizeShapesToUnitBox(shapes, true),
+    included: true,
+  }));
+  return { regions, skipped: [] };
 }
 
 // Identifies the tittle (dot) among a character's raw glyph shapes: the
