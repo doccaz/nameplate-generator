@@ -751,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.15</div>
+    <div id="viewportVersion">v2.16</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -2675,6 +2675,40 @@ function msEdgePoint(cx, cy, edge) {
   }
 }
 
+// Independent nearest-centroid classification (one pixel at a time, no
+// spatial awareness) turns a soft/anti-aliased source edge into salt-and-
+// pepper boundary noise: pixels flicker between two colors block by block
+// along the gradient. Marching squares faithfully traces every one of those
+// flickers, and even after simplify+Chaikin the residual boundary jitter
+// reads as a faceted/hatched surface on the extruded geometry. A majority
+// filter (each pixel becomes whatever most of its 3x3 neighborhood already
+// is) cleans this up before tracing, without erasing real small holes -
+// letterform counters are far larger than a 3x3 neighborhood.
+function majorityFilterMask(mask, W, H, passes) {
+  let src = mask;
+  for (let p = 0; p < passes; p++) {
+    const dst = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        let count = 0, total = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= H) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            if (nx < 0 || nx >= W) continue;
+            total++;
+            if (src[ny * W + nx]) count++;
+          }
+        }
+        dst[y * W + x] = count * 2 >= total ? 1 : 0;
+      }
+    }
+    src = dst;
+  }
+  return src;
+}
+
 // Traces a binary mask (Uint8Array, W*H, row-major) into THREE.Shape objects
 // with holes. Walks a 1px-padded grid (so regions touching the image edge
 // still close into loops), extracts every boundary loop via marching
@@ -2727,13 +2761,14 @@ function traceMaskToShapes(mask, W, H, minArea) {
   }
   if (!loops.length) return [];
 
+  // Nesting is computed on ALL loops first, unfiltered - a hole's parent
+  // must be found regardless of either loop's size before we can even ask
+  // "is this a hole".
   const areas = loops.map((l) => Math.abs(signedArea(l)));
-  const kept = loops.map((l, i) => areas[i] >= minArea);
   const parent = loops.map((loop, i) => {
-    if (!kept[i]) return -1;
     let best = -1, bestArea = Infinity;
     loops.forEach((other, j) => {
-      if (i === j || !kept[j] || areas[j] <= areas[i]) return;
+      if (i === j || areas[j] <= areas[i]) return;
       if (areas[j] < bestArea && pointInPolygon(loop[0], other)) { best = j; bestArea = areas[j]; }
     });
     return best;
@@ -2744,13 +2779,27 @@ function traceMaskToShapes(mask, W, H, minArea) {
     depth[i] = 0; // guard against cycles before recursing
     return (depth[i] = parent[i] === -1 ? 0 : getDepth(parent[i]) + 1);
   };
-  loops.forEach((_, i) => { if (kept[i]) getDepth(i); });
+  loops.forEach((_, i) => getDepth(i));
+
+  // minArea noise filtering only makes sense for standalone solid blobs
+  // (even depth) - anti-aliasing/quantization speckle shows up as its own
+  // small isolated shape. A hole (odd depth) can be legitimately tiny - a
+  // letterform's counter, e.g. the triangle in "A" or the loop in a script
+  // "e" - and must never be dropped just because it's small, or the shape
+  // it belongs to renders solid/malformed instead of with its real cutout.
+  const kept = loops.map((l, i) => depth[i] % 2 === 1 || areas[i] >= minArea);
 
   // A near-collinear sliver loop (thin enough to clear minArea by raw area
   // but not by shape) can simplify all the way down to a single point -
   // THREE.Shape.closePath() throws on an empty curve list, so drop those
   // rather than passing them through.
-  const smoothed = loops.map((l) => chaikinSmooth(simplifyPolygon(l, 1.4), 2));
+  // Chaikin doubles point count per iteration without removing the
+  // near-collinear points it just created; left in, those produce many
+  // almost-but-not-quite-aligned extrusion wall segments whose normals
+  // wobble just enough to read as a faceted/hatched surface under angled
+  // light. A second, gentler simplify pass after smoothing collapses that
+  // redundancy while keeping the actual curve shape.
+  const smoothed = loops.map((l) => simplifyPolygon(chaikinSmooth(simplifyPolygon(l, 1.4), 2), 0.4));
   const valid = smoothed.map((pts) => pts.length >= 3);
   const toPoly = (Ctor, pts) => {
     const p = new Ctor();
@@ -2850,7 +2899,8 @@ function traceRasterToRegions(imageData, colorCount) {
   centroids.forEach((centroid, c) => {
     const mask = new Uint8Array(n);
     for (let i = 0; i < n; i++) mask[i] = labels[i] === c ? 1 : 0;
-    const shapes = traceMaskToShapes(mask, W, H, minArea);
+    const smoothedMask = majorityFilterMask(mask, W, H, 4);
+    const shapes = traceMaskToShapes(smoothedMask, W, H, minArea);
     if (!shapes.length) return;
     const hex = '#' + centroid.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
     buckets.set(hex, shapes);
