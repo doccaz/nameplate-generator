@@ -751,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.19</div>
+    <div id="viewportVersion">v2.20</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -3055,10 +3055,21 @@ function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
   const toClipper = (pts) => pts.map(p => ({ X: Math.round(p.x * SCALE), Y: Math.round(p.y * SCALE) }));
   const fromClipper = (path) => path.map(p => ({ x: p.X / SCALE, y: p.Y / SCALE }));
 
+  // Subject paths are combined under pftNonZero, so winding direction matters
+  // here (unlike the outlines/counters clip side below, which uses evenodd
+  // and doesn't care): an outer boundary and its holes must wind opposite
+  // ways so their winding numbers subtract instead of stacking. THREE.Shape
+  // doesn't enforce that - e.g. attachKeyringToShape's mounting hole is built
+  // with absarc's default counterclockwise winding, same direction as the
+  // outer boundary - so a same-winding "hole" here gets treated as solid
+  // fill instead of a hole, silently erasing it (the keyring hole vanishing
+  // in Engrave/Die Cut/Flush while Emboss, which never goes through Clipper,
+  // stayed fine).
+  const withWinding = (pts, wantPositive) => (signedArea(pts) >= 0) === wantPositive ? pts : pts.slice().reverse();
   const subjectPaths = [];
   shapes.forEach(s => {
-    subjectPaths.push(toClipper(s._pts || s.getPoints(64)));
-    (s.holes || []).forEach(h => subjectPaths.push(toClipper(h.getPoints(64))));
+    subjectPaths.push(toClipper(withWinding(s._pts || s.getPoints(64), true)));
+    (s.holes || []).forEach(h => subjectPaths.push(toClipper(withWinding(h.getPoints(64), false))));
   });
 
   const diffClipper = new ClipperLib.Clipper();
