@@ -751,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.18</div>
+    <div id="viewportVersion">v2.19</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -3030,10 +3030,22 @@ function cutGlyphsIntoShapes(shapes, outlines, counters) {
 // convoluted one, e.g. a traced picture's tight spiral tail - it can bridge
 // to the wrong loop entirely, leaving a real gap in the cap triangulation
 // (visible as streaky z-fighting and open/non-manifold edges in the export).
-// Clipper's difference/union produces exact simple polygons instead, which
-// are then re-nested into flat shape/hole pairs by point-in-polygon
-// containment (same technique as traceMaskToShapes' loop nesting) so each
-// cap earcut sees afterward is simple enough to bridge cleanly.
+// Clipper's difference produces exact simple polygons instead, which are
+// then re-nested into flat shape/hole pairs by point-in-polygon containment
+// (same technique as traceMaskToShapes' loop nesting) so each cap earcut
+// sees afterward is simple enough to bridge cleanly.
+//
+// outlines and counters must be cut in ONE evenodd pass, not two separate
+// nonzero passes (subtract outlines, then re-union counters back in) - a
+// real logo can nest deeper than the 2 levels "outline" (fill) and
+// "counter" (hole-in-a-fill) suggest, e.g. the SUSE chameleon's eye is
+// fill(body) > hole(eye ring) > fill(pupil) > hole(highlight), 4 levels.
+// Unioning the eye-ring counter back as solid in its own pass also
+// re-solidifies the pupil nested inside it (pupil ⊂ ring), silently
+// dropping the pupil's own pocket cut - the plate stayed uncut there and
+// z-fought against the pupil's insert mesh sitting on top of it. Evenodd
+// fill, applied once to outlines+counters together, reconstructs the
+// original nesting's alternation at any depth without this two-phase trap.
 function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
   if (typeof ClipperLib === 'undefined' || !outlines.length) {
     cutGlyphsIntoShapes(shapes, outlines, counters);
@@ -3051,19 +3063,9 @@ function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
 
   const diffClipper = new ClipperLib.Clipper();
   diffClipper.AddPaths(subjectPaths, ClipperLib.PolyType.ptSubject, true);
-  diffClipper.AddPaths(outlines.map(toClipper), ClipperLib.PolyType.ptClip, true);
-  const diff = new ClipperLib.Paths();
-  diffClipper.Execute(ClipperLib.ClipType.ctDifference, diff, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-
-  let resultPaths = diff;
-  if (counters.length && diff.length) {
-    const unionClipper = new ClipperLib.Clipper();
-    unionClipper.AddPaths(diff, ClipperLib.PolyType.ptSubject, true);
-    unionClipper.AddPaths(counters.map(toClipper), ClipperLib.PolyType.ptClip, true);
-    const unioned = new ClipperLib.Paths();
-    unionClipper.Execute(ClipperLib.ClipType.ctUnion, unioned, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-    resultPaths = unioned;
-  }
+  diffClipper.AddPaths(outlines.concat(counters).map(toClipper), ClipperLib.PolyType.ptClip, true);
+  const resultPaths = new ClipperLib.Paths();
+  diffClipper.Execute(ClipperLib.ClipType.ctDifference, resultPaths, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftEvenOdd);
 
   shapes.length = 0;
   if (!resultPaths.length) return;
@@ -3585,7 +3587,7 @@ async function rebuild() {
         // no bevel) instead of a full raised bump, sitting flush at baseHeight.
         scaledShapesPerRegion.forEach((r, i) => {
           if (!r.shapes.length) return;
-          const geo = new THREE.ExtrudeGeometry(r.shapes, { depth: engraveDepth, curveSegments: 24 });
+          const geo = new THREE.ExtrudeGeometry(r.shapes, { depth: engraveDepth, curveSegments: 24, bevelEnabled: false });
           contentRegions.push({ geo, colorHex: r.colorHex, label: `region${i + 1}`, z: baseHeight });
         });
       }
@@ -3684,8 +3686,15 @@ async function rebuild() {
     // so the whole array would silently become "dy" for every shape.
     const topShapes = plateShapes.map((s) => cloneShapeWithHoles(s));
     cutGlyphsIntoShapesRobust(topShapes, glyphOutlines, glyphCounters);
-    const baseGeo = new THREE.ExtrudeGeometry(plateShapes, { depth: baseHeight, curveSegments: 24 });
-    const topGeo = new THREE.ExtrudeGeometry(topShapes, { depth: engraveDepth, curveSegments: 24 });
+    // bevelEnabled must be explicit - ExtrudeGeometry defaults it to true with
+    // a small nonzero bevel, which silently eats fine nested detail (e.g. a
+    // logo's eye: a ~0.2mm-wide ring wall between the eye-hole and the pupil
+    // island gets bevel-offset almost or fully shut, corrupting/closing a
+    // hole that cutGlyphsIntoShapesRobust cut correctly - found by comparing
+    // the shape data going into ExtrudeGeometry, which was correct, against
+    // the triangulated output, which wasn't).
+    const baseGeo = new THREE.ExtrudeGeometry(plateShapes, { depth: baseHeight, curveSegments: 24, bevelEnabled: false });
+    const topGeo = new THREE.ExtrudeGeometry(topShapes, { depth: engraveDepth, curveSegments: 24, bevelEnabled: false });
     topGeo.translate(0, 0, baseHeight);
     plateGeo = mergeGeometries([baseGeo, topGeo], false);
   } else {
