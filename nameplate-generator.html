@@ -751,7 +751,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.17</div>
+    <div id="viewportVersion">v2.18</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -3022,6 +3022,90 @@ function cutGlyphsIntoShapes(shapes, outlines, counters) {
   });
 }
 
+// Same job as cutGlyphsIntoShapes (used for Die Cut and the Engrave/Flush top
+// slab), but goes through ClipperLib boolean ops instead of handing the raw
+// outlines to `shapes[i].holes` for earcut to bridge at extrude time. Earcut
+// triangulates a shape-with-holes by cutting bridge edges from each hole out
+// to the outer contour or another hole, and with many holes - or one very
+// convoluted one, e.g. a traced picture's tight spiral tail - it can bridge
+// to the wrong loop entirely, leaving a real gap in the cap triangulation
+// (visible as streaky z-fighting and open/non-manifold edges in the export).
+// Clipper's difference/union produces exact simple polygons instead, which
+// are then re-nested into flat shape/hole pairs by point-in-polygon
+// containment (same technique as traceMaskToShapes' loop nesting) so each
+// cap earcut sees afterward is simple enough to bridge cleanly.
+function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
+  if (typeof ClipperLib === 'undefined' || !outlines.length) {
+    cutGlyphsIntoShapes(shapes, outlines, counters);
+    return;
+  }
+  const SCALE = 100000;
+  const toClipper = (pts) => pts.map(p => ({ X: Math.round(p.x * SCALE), Y: Math.round(p.y * SCALE) }));
+  const fromClipper = (path) => path.map(p => ({ x: p.X / SCALE, y: p.Y / SCALE }));
+
+  const subjectPaths = [];
+  shapes.forEach(s => {
+    subjectPaths.push(toClipper(s._pts || s.getPoints(64)));
+    (s.holes || []).forEach(h => subjectPaths.push(toClipper(h.getPoints(64))));
+  });
+
+  const diffClipper = new ClipperLib.Clipper();
+  diffClipper.AddPaths(subjectPaths, ClipperLib.PolyType.ptSubject, true);
+  diffClipper.AddPaths(outlines.map(toClipper), ClipperLib.PolyType.ptClip, true);
+  const diff = new ClipperLib.Paths();
+  diffClipper.Execute(ClipperLib.ClipType.ctDifference, diff, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+
+  let resultPaths = diff;
+  if (counters.length && diff.length) {
+    const unionClipper = new ClipperLib.Clipper();
+    unionClipper.AddPaths(diff, ClipperLib.PolyType.ptSubject, true);
+    unionClipper.AddPaths(counters.map(toClipper), ClipperLib.PolyType.ptClip, true);
+    const unioned = new ClipperLib.Paths();
+    unionClipper.Execute(ClipperLib.ClipType.ctUnion, unioned, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    resultPaths = unioned;
+  }
+
+  shapes.length = 0;
+  if (!resultPaths.length) return;
+
+  const loops = resultPaths.map(fromClipper);
+  const areas = loops.map(l => Math.abs(signedArea(l)));
+  const parent = loops.map((loop, i) => {
+    let best = -1, bestArea = Infinity;
+    loops.forEach((other, j) => {
+      if (i === j || areas[j] <= areas[i]) return;
+      if (areas[j] < bestArea && pointInPolygon(loop[0], other)) { best = j; bestArea = areas[j]; }
+    });
+    return best;
+  });
+  const depth = loops.map(() => -1);
+  const getDepth = (i) => {
+    if (depth[i] !== -1) return depth[i];
+    depth[i] = 0; // guard against cycles before recursing
+    return (depth[i] = parent[i] === -1 ? 0 : getDepth(parent[i]) + 1);
+  };
+  loops.forEach((_, i) => getDepth(i));
+
+  const shapeByIndex = new Map();
+  loops.forEach((loop, i) => {
+    if (depth[i] % 2 !== 0 || loop.length < 3) return;
+    const s = new THREE.Shape();
+    loop.forEach((p, k) => (k === 0 ? s.moveTo(p.x, p.y) : s.lineTo(p.x, p.y)));
+    s.closePath();
+    shapeByIndex.set(i, s);
+    shapes.push(s);
+  });
+  loops.forEach((loop, i) => {
+    if (depth[i] % 2 !== 1 || loop.length < 3) return;
+    const parentShape = shapeByIndex.get(parent[i]);
+    if (!parentShape) return;
+    const h = new THREE.Path();
+    loop.forEach((p, k) => (k === 0 ? h.moveTo(p.x, p.y) : h.lineTo(p.x, p.y)));
+    h.closePath();
+    parentShape.holes.push(h);
+  });
+}
+
 function signedArea(poly) {
   let a = 0;
   for (let i = 0; i < poly.length; i++) {
@@ -3590,7 +3674,7 @@ async function rebuild() {
   // Engrave instead needs two slabs so the cut only goes partway down: a
   // solid base, plus a thin top slab (holding the glyph cuts) stacked on it.
   if (textStyle === 'diecut' && glyphOutlines.length) {
-    cutGlyphsIntoShapes(plateShapes, glyphOutlines, glyphCounters);
+    cutGlyphsIntoShapesRobust(plateShapes, glyphOutlines, glyphCounters);
   }
 
   let plateGeo;
@@ -3599,7 +3683,7 @@ async function rebuild() {
     // index, array) and cloneShapeWithHoles's 2nd/3rd params are (dx, dy),
     // so the whole array would silently become "dy" for every shape.
     const topShapes = plateShapes.map((s) => cloneShapeWithHoles(s));
-    cutGlyphsIntoShapes(topShapes, glyphOutlines, glyphCounters);
+    cutGlyphsIntoShapesRobust(topShapes, glyphOutlines, glyphCounters);
     const baseGeo = new THREE.ExtrudeGeometry(plateShapes, { depth: baseHeight, curveSegments: 24 });
     const topGeo = new THREE.ExtrudeGeometry(topShapes, { depth: engraveDepth, curveSegments: 24 });
     topGeo.translate(0, 0, baseHeight);
