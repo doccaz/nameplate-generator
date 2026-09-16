@@ -173,6 +173,11 @@
   }
   .colorrow span{font-size:12.5px;color:var(--muted);}
 
+  .layer-row{padding-top:10px;border-top:1px solid var(--border);}
+  .layer-row:first-child{padding-top:0;border-top:none;}
+  .layer-row .layer-title{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:8px;}
+  .layer-row .slidewrap{margin-bottom:8px;}
+
   .swatchrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
   .swatch{
     width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;
@@ -459,6 +464,7 @@
               <option value="luckiest_guy">Luckiest Guy</option>
               <option value="bungee">Bungee</option>
               <option value="boogaloo">Boogaloo</option>
+              <option value="bowlby_one">Bowlby One</option>
               <option value="nunito_extrabold">Nunito ExtraBold</option>
             </optgroup>
             <optgroup label="Non-Latin Scripts" data-i18n-label="fontgroup.nonLatin">
@@ -752,6 +758,20 @@
         </div>
       </div>
 
+      <div class="section" id="layersSection">
+        <div class="section-title" data-i18n="section.layers">LAYERED OUTLINES</div>
+        <div class="row">
+          <label data-i18n="field.layerCount">Outline layers</label>
+          <div class="segbtns" id="layerCountButtons">
+            <button data-layers="0" class="active" data-i18n="layers.off">Off</button>
+            <button data-layers="2" data-i18n="layers.two">2</button>
+            <button data-layers="3" data-i18n="layers.three">3</button>
+            <button data-layers="4" data-i18n="layers.four">4</button>
+          </div>
+        </div>
+        <div id="layerRows"></div>
+      </div>
+
       <div class="section">
         <div class="section-title" data-i18n="section.colors">PREVIEW COLORS</div>
         <div class="row swatchrow" id="colorPresetSwatches"></div>
@@ -781,7 +801,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.23</div>
+    <div id="viewportVersion">v2.24</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -923,6 +943,14 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Adds a raised rim around the plate\'s outer edge, in the same color as the base, inset from the edge by the border width and standing above the plate by the border height.',
     'field.raisedBorderWidth': 'Border width',
     'field.raisedBorderHeight': 'Border height',
+    'section.layers': 'Layered Outlines',
+    'field.layerCount': 'Outline layers',
+    'layers.off': 'Off',
+    'layers.two': '2',
+    'layers.three': '3',
+    'layers.four': '4',
+    'field.layer': 'Layer {n}',
+    'field.layerColor': 'Color',
     'field.computedSize': 'Computed size',
     'field.layout': 'Layout',
     'holes.none': 'None',
@@ -1083,6 +1111,14 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Adiciona uma borda elevada ao redor do contorno externo da placa, na mesma cor da base, recuada da borda pela largura definida e projetando-se acima da placa pela altura definida.',
     'field.raisedBorderWidth': 'Largura da borda',
     'field.raisedBorderHeight': 'Altura da borda',
+    'section.layers': 'Contornos em Camadas',
+    'field.layerCount': 'Camadas de contorno',
+    'layers.off': 'Desligado',
+    'layers.two': '2',
+    'layers.three': '3',
+    'layers.four': '4',
+    'field.layer': 'Camada {n}',
+    'field.layerColor': 'Cor',
     'field.computedSize': 'Tamanho calculado',
     'field.layout': 'Disposição',
     'holes.none': 'Nenhum',
@@ -1243,6 +1279,14 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Añade un reborde elevado alrededor del contorno exterior de la placa, del mismo color que la base, retranqueado desde el borde según el ancho definido y sobresaliendo por encima de la placa según la altura definida.',
     'field.raisedBorderWidth': 'Ancho del borde',
     'field.raisedBorderHeight': 'Altura del borde',
+    'section.layers': 'Contornos en Capas',
+    'field.layerCount': 'Capas de contorno',
+    'layers.off': 'Desactivado',
+    'layers.two': '2',
+    'layers.three': '3',
+    'layers.four': '4',
+    'field.layer': 'Capa {n}',
+    'field.layerColor': 'Color',
     'field.computedSize': 'Tamaño calculado',
     'field.layout': 'Disposición',
     'holes.none': 'Ninguno',
@@ -1344,6 +1388,9 @@ langSelectEl.addEventListener('change', () => {
   currentLang = langSelectEl.value;
   localStorage.setItem('tagify3d_lang', currentLang);
   applyI18n();
+  // Layer row labels are built with t() at creation time (not data-i18n
+  // attributes applyI18n() can walk), so they need an explicit rebuild here.
+  renderLayerRows();
 });
 
 
@@ -1553,6 +1600,7 @@ const FONT_SOURCES = {
   luckiest_guy: COMPAI_BASE + 'luckiest-guy/data/typefaces/normal-400.json',
   bungee: COMPAI_BASE + 'bungee/data/typefaces/normal-400.json',
   boogaloo: COMPAI_BASE + 'boogaloo/data/typefaces/normal-400.json',
+  bowlby_one: COMPAI_BASE + 'bowlby-one/data/typefaces/normal-400.json',
   nunito_extrabold: COMPAI_BASE + 'nunito/data/typefaces/normal-800.json',
   grand_hotel: COMPAI_BASE + 'grand-hotel/data/typefaces/normal-400.json',
   give_you_glory: COMPAI_BASE + 'give-you-glory/data/typefaces/normal-400.json',
@@ -1730,6 +1778,19 @@ let lineScales = {}; // line index -> percent (100 = base text height)
 let contentMode = 'text'; // 'text' | 'picture'
 let pictureData = null; // { regions: [{colorHex, shapes, included}], skipped: [{tag, reason}] }
 
+// Layered outlines ("echo" effect, LEGO-keychain-style): a fixed stack of up
+// to 4 rings extruded outward from the plate's own silhouette, innermost
+// (closest to the plate edge) first. layerCount picks how many of these are
+// active; the array itself always holds all 4 so per-layer settings survive
+// switching the count back and forth.
+let layerCount = 0;
+let layerConfigs = [
+  { margin: 2, height: 2.5, color: '#1a1a1a' },
+  { margin: 2, height: 2, color: '#e8c200' },
+  { margin: 2, height: 1.5, color: '#c81e2c' },
+  { margin: 2, height: 1, color: '#1c3d6b' },
+];
+
 function updateTextStyleUI() {
   const depthRowId = contentMode === 'picture' ? 'pictureDepthRow' : 'textDepthRow';
   const depthLabelId = contentMode === 'picture' ? 'pictureDepthLabel' : 'textDepthLabel';
@@ -1803,6 +1864,67 @@ function renderLineScales() {
     wrap.append(lbl, slider, val);
     container.appendChild(wrap);
   });
+}
+
+function renderLayerRows() {
+  const container = document.getElementById('layerRows');
+  container.innerHTML = '';
+  for (let i = 0; i < layerCount; i++) {
+    const cfg = layerConfigs[i];
+    const row = document.createElement('div');
+    row.className = 'row layer-row';
+
+    const title = document.createElement('span');
+    title.className = 'layer-title';
+    title.textContent = t('field.layer', { n: i + 1 });
+    row.appendChild(title);
+
+    const marginWrap = document.createElement('div');
+    marginWrap.className = 'slidewrap';
+    const marginSlider = document.createElement('input');
+    marginSlider.type = 'range'; marginSlider.min = '0.5'; marginSlider.max = '10'; marginSlider.step = '0.5';
+    marginSlider.value = cfg.margin;
+    const marginVal = document.createElement('span');
+    marginVal.className = 'val';
+    marginVal.textContent = cfg.margin + ' mm';
+    marginSlider.addEventListener('input', () => {
+      cfg.margin = parseFloat(marginSlider.value);
+      marginVal.textContent = marginSlider.value + ' mm';
+      scheduleRebuild();
+    });
+    marginWrap.append(marginSlider, marginVal);
+
+    const heightWrap = document.createElement('div');
+    heightWrap.className = 'slidewrap';
+    const heightSlider = document.createElement('input');
+    heightSlider.type = 'range'; heightSlider.min = '0.5'; heightSlider.max = '10'; heightSlider.step = '0.5';
+    heightSlider.value = cfg.height;
+    const heightVal = document.createElement('span');
+    heightVal.className = 'val';
+    heightVal.textContent = cfg.height + ' mm';
+    heightSlider.addEventListener('input', () => {
+      cfg.height = parseFloat(heightSlider.value);
+      heightVal.textContent = heightSlider.value + ' mm';
+      scheduleRebuild();
+    });
+    heightWrap.append(heightSlider, heightVal);
+
+    const colorRow = document.createElement('div');
+    colorRow.className = 'colorrow';
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = cfg.color;
+    const colorLabel = document.createElement('span');
+    colorLabel.textContent = t('field.layerColor');
+    colorInput.addEventListener('input', () => {
+      cfg.color = colorInput.value;
+      scheduleRebuild();
+    });
+    colorRow.append(colorInput, colorLabel);
+
+    row.append(marginWrap, heightWrap, colorRow);
+    container.appendChild(row);
+  }
 }
 
 const PRESETS = {
@@ -1990,6 +2112,15 @@ document.getElementById('holeButtons').addEventListener('click', (e) => {
   btn.classList.add('active');
   holeMode = btn.dataset.holes;
   document.getElementById('holeParamsRow').style.display = holeMode === 'none' ? 'none' : 'flex';
+  scheduleRebuild();
+});
+
+document.getElementById('layerCountButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  layerCount = parseInt(btn.dataset.layers, 10);
+  renderLayerRows();
   scheduleRebuild();
 });
 
@@ -3246,6 +3377,54 @@ function buildRaisedBorderShapes(plateShapes, borderWidth) {
   return loopsToShapes(result.map(fromClipper));
 }
 
+// Layered outlines ("echo" effect, LEGO-keychain-style): a stack of colored
+// rings extruded outward from the plate's own silhouette, innermost first -
+// each layer's footprint is the ring between its own outward-offset boundary
+// and the boundary of the layer inside it (or the plate's own outline, for
+// the first layer). Every ring sits on the bed (z=0) and gets its own
+// height, so the plate reads as a stepped pyramid from the side and nested
+// color bands from above. Ignores plateShapes' own holes (mounting/keyring
+// holes are internal to the plate, irrelevant to these external rings) and
+// first unions every piece of plateShapes into one silhouette, since Contour
+// mode can hand back several disconnected shapes (unbridged letters) that
+// should still read as a single outline from the outside.
+function buildLayerRings(plateShapes, layers) {
+  if (typeof ClipperLib === 'undefined' || !layers.length) return [];
+  const SCALE = 1000;
+  const toClipper = (pts) => pts.map(p => ({ X: Math.round(p.x * SCALE), Y: Math.round(p.y * SCALE) }));
+  const fromClipper = (path) => path.map(p => ({ x: p.X / SCALE, y: p.Y / SCALE }));
+  const withWinding = (pts, wantPositive) => (signedArea(pts) >= 0) === wantPositive ? pts : pts.slice().reverse();
+
+  const basePaths = plateShapes.map(s => toClipper(withWinding(s._pts || s.getPoints(64), true)));
+  const unionClipper = new ClipperLib.Clipper();
+  unionClipper.AddPaths(basePaths, ClipperLib.PolyType.ptSubject, true);
+  const unionResult = new ClipperLib.Paths();
+  unionClipper.Execute(ClipperLib.ClipType.ctUnion, unionResult, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  if (!unionResult.length) return [];
+
+  let currentPaths = unionResult;
+  const rings = [];
+  layers.forEach((layer) => {
+    if (layer.margin <= 0 || layer.height <= 0) return;
+    const co = new ClipperLib.ClipperOffset(2, 0.25);
+    co.AddPaths(currentPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+    const outerPaths = new ClipperLib.Paths();
+    co.Execute(outerPaths, layer.margin * SCALE);
+    if (!outerPaths.length) return;
+
+    const diff = new ClipperLib.Clipper();
+    diff.AddPaths(outerPaths, ClipperLib.PolyType.ptSubject, true);
+    diff.AddPaths(currentPaths, ClipperLib.PolyType.ptClip, true);
+    const result = new ClipperLib.Paths();
+    diff.Execute(ClipperLib.ClipType.ctDifference, result, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    if (result.length) {
+      rings.push({ shapes: loopsToShapes(result.map(fromClipper)), height: layer.height, colorHex: layer.color });
+    }
+    currentPaths = outerPaths;
+  });
+  return rings;
+}
+
 function signedArea(poly) {
   let a = 0;
   for (let i = 0; i < poly.length; i++) {
@@ -3901,6 +4080,18 @@ async function rebuild() {
         plateGeo = mergeGeometries([plateGeo, borderRingGeo], false);
       }
     }
+  }
+
+  // Layered outlines: each ring is its own colored part sitting on the bed
+  // (z=0), not merged into the plate - they're separate print regions like
+  // the text, not part of the base plate's own material.
+  if (layerCount > 0) {
+    const layerRings = buildLayerRings(plateShapes, layerConfigs.slice(0, layerCount));
+    layerRings.forEach((ring, i) => {
+      if (!ring.shapes.length) return;
+      const ringGeo = new THREE.ExtrudeGeometry(ring.shapes, { depth: ring.height, curveSegments: 24, bevelEnabled: false });
+      contentRegions.push({ geo: ringGeo, colorHex: ring.colorHex, label: 'layer' + (i + 1), z: 0 });
+    });
   }
 
   const plateMat = new THREE.MeshStandardMaterial({ color: els.plateColor.value, roughness: 0.55, metalness: 0.05 });
