@@ -173,6 +173,13 @@
   }
   .colorrow span{font-size:12.5px;color:var(--muted);}
 
+  .swatchrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .swatch{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0;
+    background:none;flex-shrink:0;transition:border-color .15s,transform .15s;
+  }
+  .swatch:hover{border-color:var(--muted);transform:scale(1.08);}
+
   .checkrow{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
   .checkrow input{width:15px;height:15px;accent-color:var(--accent);}
   .checkrow label{margin:0;color:var(--text);font-size:13px;cursor:pointer;}
@@ -668,6 +675,26 @@
             <span class="val" id="bevelSizeVal">0.5 mm</span>
           </div>
         </div>
+        <div class="row checkrow">
+          <input type="checkbox" id="raisedBorderEnabled">
+          <label for="raisedBorderEnabled"><span data-i18n="field.raisedBorder">Raised border</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.raisedBorder">Adds a raised rim around the plate's outer edge, in the same color as the base, inset from the edge by the border width and standing above the plate by the border height.</span></span>
+          </label>
+        </div>
+        <div class="row" id="raisedBorderWidthRow" style="display:none;">
+          <label data-i18n="field.raisedBorderWidth">Border width</label>
+          <div class="slidewrap">
+            <input type="range" id="raisedBorderWidth" min="0.5" max="10" step="0.5" value="3">
+            <span class="val" id="raisedBorderWidthVal">3 mm</span>
+          </div>
+        </div>
+        <div class="row" id="raisedBorderHeightRow" style="display:none;">
+          <label data-i18n="field.raisedBorderHeight">Border height</label>
+          <div class="slidewrap">
+            <input type="range" id="raisedBorderHeight" min="0.2" max="5" step="0.1" value="1.5">
+            <span class="val" id="raisedBorderHeightVal">1.5 mm</span>
+          </div>
+        </div>
         <div class="readout"><span data-i18n="field.computedSize">Computed size</span><b id="sizeReadout">— × — mm</b></div>
       </div>
 
@@ -727,6 +754,7 @@
 
       <div class="section">
         <div class="section-title" data-i18n="section.colors">PREVIEW COLORS</div>
+        <div class="row swatchrow" id="colorPresetSwatches"></div>
         <div class="row colorrow">
           <input type="color" id="plateColor" value="#d8d3c8">
           <span data-i18n="field.plate">Plate</span>
@@ -753,7 +781,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.21</div>
+    <div id="viewportVersion">v2.22</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -891,6 +919,10 @@ const TRANSLATIONS = {
     'field.bevel': 'Beveled edges (plate + text)',
     'tip.bevel': 'Chamfers the outer edges of the plate and text instead of leaving them sharp square-cut — softer look, and no supports needed for the top edge.',
     'field.bevelSize': 'Bevel size',
+    'field.raisedBorder': 'Raised border',
+    'tip.raisedBorder': 'Adds a raised rim around the plate\'s outer edge, in the same color as the base, inset from the edge by the border width and standing above the plate by the border height.',
+    'field.raisedBorderWidth': 'Border width',
+    'field.raisedBorderHeight': 'Border height',
     'field.computedSize': 'Computed size',
     'field.layout': 'Layout',
     'holes.none': 'None',
@@ -1047,6 +1079,10 @@ const TRANSLATIONS = {
     'field.bevel': 'Bordas chanfradas (placa + texto)',
     'tip.bevel': 'Chanfra as bordas externas da placa e do texto em vez de deixá-las retas — visual mais suave, e sem precisar de suporte na borda superior.',
     'field.bevelSize': 'Tamanho do chanfro',
+    'field.raisedBorder': 'Borda elevada',
+    'tip.raisedBorder': 'Adiciona uma borda elevada ao redor do contorno externo da placa, na mesma cor da base, recuada da borda pela largura definida e projetando-se acima da placa pela altura definida.',
+    'field.raisedBorderWidth': 'Largura da borda',
+    'field.raisedBorderHeight': 'Altura da borda',
     'field.computedSize': 'Tamanho calculado',
     'field.layout': 'Disposição',
     'holes.none': 'Nenhum',
@@ -1203,6 +1239,10 @@ const TRANSLATIONS = {
     'field.bevel': 'Bordes biselados (placa + texto)',
     'tip.bevel': 'Bisela los bordes exteriores de la placa y el texto en lugar de dejarlos rectos — un aspecto más suave, y sin necesidad de soportes en el borde superior.',
     'field.bevelSize': 'Tamaño del bisel',
+    'field.raisedBorder': 'Borde elevado',
+    'tip.raisedBorder': 'Añade un reborde elevado alrededor del contorno exterior de la placa, del mismo color que la base, retranqueado desde el borde según el ancho definido y sobresaliendo por encima de la placa según la altura definida.',
+    'field.raisedBorderWidth': 'Ancho del borde',
+    'field.raisedBorderHeight': 'Altura del borde',
     'field.computedSize': 'Tamaño calculado',
     'field.layout': 'Disposición',
     'holes.none': 'Ninguno',
@@ -1636,6 +1676,9 @@ const els = {
   offsetY: document.getElementById('offsetY'),
   bevelEnabled: document.getElementById('bevelEnabled'),
   bevelSize: document.getElementById('bevelSize'),
+  raisedBorderEnabled: document.getElementById('raisedBorderEnabled'),
+  raisedBorderWidth: document.getElementById('raisedBorderWidth'),
+  raisedBorderHeight: document.getElementById('raisedBorderHeight'),
   topText: document.getElementById('topText'),
   bottomText: document.getElementById('bottomText'),
   borderTextSize: document.getElementById('borderTextSize'),
@@ -1984,6 +2027,30 @@ bindSlider(els.plateThickness, document.getElementById('plateThicknessVal'), 'mm
 [els.font, els.plateWidth, els.plateHeight, els.holeDiameter, els.holeMargin, els.plateColor, els.textColor]
   .forEach(el => el.addEventListener('input', scheduleRebuild));
 
+// Quick preview color-scheme swatches - each just sets the plate/text color
+// pickers to a curated pair instead of opening the native color picker twice.
+const COLOR_PRESETS = [
+  { plateColor: '#d8d3c8', textColor: '#e8672f' },
+  { plateColor: '#c81e2c', textColor: '#ffffff' },
+  { plateColor: '#1c3d6b', textColor: '#ffffff' },
+  { plateColor: '#1a1a1a', textColor: '#ffffff' },
+  { plateColor: '#2f8f5b', textColor: '#eaf7ee' },
+  { plateColor: '#8b6bff', textColor: '#ffd6e8' },
+];
+COLOR_PRESETS.forEach(({ plateColor, textColor }) => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'swatch';
+  btn.style.background = `linear-gradient(135deg, ${plateColor} 50%, ${textColor} 50%)`;
+  btn.title = `${plateColor} / ${textColor}`;
+  btn.addEventListener('click', () => {
+    els.plateColor.value = plateColor;
+    els.textColor.value = textColor;
+    scheduleRebuild();
+  });
+  document.getElementById('colorPresetSwatches').appendChild(btn);
+});
+
 els.text.addEventListener('input', () => {
   renderLineScales();
   scheduleRebuild();
@@ -1998,6 +2065,14 @@ els.text.addEventListener('input', () => {
 bindSlider(els.bevelSize, document.getElementById('bevelSizeVal'), 'mm');
 els.bevelEnabled.addEventListener('change', () => {
   document.getElementById('bevelSizeRow').style.display = els.bevelEnabled.checked ? 'block' : 'none';
+  scheduleRebuild();
+});
+
+bindSlider(els.raisedBorderWidth, document.getElementById('raisedBorderWidthVal'), 'mm');
+bindSlider(els.raisedBorderHeight, document.getElementById('raisedBorderHeightVal'), 'mm');
+els.raisedBorderEnabled.addEventListener('change', () => {
+  document.getElementById('raisedBorderWidthRow').style.display = els.raisedBorderEnabled.checked ? 'block' : 'none';
+  document.getElementById('raisedBorderHeightRow').style.display = els.raisedBorderEnabled.checked ? 'block' : 'none';
   scheduleRebuild();
 });
 
@@ -3088,8 +3163,14 @@ function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
 
   shapes.length = 0;
   if (!resultPaths.length) return;
+  shapes.push(...loopsToShapes(resultPaths.map(fromClipper)));
+}
 
-  const loops = resultPaths.map(fromClipper);
+// Re-nests a flat list of simple polygon loops (e.g. straight out of a
+// ClipperLib boolean op) into proper THREE.Shape/hole pairs by point-in-polygon
+// containment - odd nesting depth = hole of the nearest smaller-area ancestor.
+// Handles arbitrary nesting depth (a hole can itself contain a filled island).
+function loopsToShapes(loops) {
   const areas = loops.map(l => Math.abs(signedArea(l)));
   const parent = loops.map((loop, i) => {
     let best = -1, bestArea = Infinity;
@@ -3107,6 +3188,7 @@ function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
   };
   loops.forEach((_, i) => getDepth(i));
 
+  const shapes = [];
   const shapeByIndex = new Map();
   loops.forEach((loop, i) => {
     if (depth[i] % 2 !== 0 || loop.length < 3) return;
@@ -3125,6 +3207,43 @@ function cutGlyphsIntoShapesRobust(shapes, outlines, counters) {
     h.closePath();
     parentShape.holes.push(h);
   });
+  return shapes;
+}
+
+// Raised border: a rim extruded above the plate, following the plate's own
+// outline inset inward by borderWidth. Built with ClipperLib (like the
+// contour/bridge shapes above) so it works for every shape mode, and so any
+// holes near the edge (mounting/keyring) punch through the rim too instead of
+// being capped over by it.
+function buildRaisedBorderShapes(plateShapes, borderWidth) {
+  if (typeof ClipperLib === 'undefined' || borderWidth <= 0) return [];
+  const SCALE = 1000;
+  const toClipper = (pts) => pts.map(p => ({ X: Math.round(p.x * SCALE), Y: Math.round(p.y * SCALE) }));
+  const fromClipper = (path) => path.map(p => ({ x: p.X / SCALE, y: p.Y / SCALE }));
+  const withWinding = (pts, wantPositive) => (signedArea(pts) >= 0) === wantPositive ? pts : pts.slice().reverse();
+
+  const outerPaths = [];
+  const clipPaths = [];
+  plateShapes.forEach(s => {
+    outerPaths.push(toClipper(withWinding(s._pts || s.getPoints(64), true)));
+    (s.holes || []).forEach(h => clipPaths.push(toClipper(withWinding(h.getPoints(64), true))));
+  });
+  if (!outerPaths.length) return [];
+
+  const co = new ClipperLib.ClipperOffset(2, 0.25);
+  co.AddPaths(outerPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+  const insetPaths = new ClipperLib.Paths();
+  co.Execute(insetPaths, -borderWidth * SCALE);
+  clipPaths.push(...insetPaths.map(p => toClipper(withWinding(fromClipper(p), true))));
+
+  const diff = new ClipperLib.Clipper();
+  diff.AddPaths(outerPaths, ClipperLib.PolyType.ptSubject, true);
+  diff.AddPaths(clipPaths, ClipperLib.PolyType.ptClip, true);
+  const result = new ClipperLib.Paths();
+  diff.Execute(ClipperLib.ClipType.ctDifference, result, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  if (!result.length) return [];
+
+  return loopsToShapes(result.map(fromClipper));
 }
 
 function signedArea(poly) {
@@ -3461,7 +3580,18 @@ function addHoles(shape, w, h, mode, diameter, margin) {
   });
 }
 
+// Bumped at the start of every rebuild() call so a stale call - one whose
+// font load or render-yield await was still pending when a newer change
+// rescheduled rebuild() - can detect it's no longer the latest and bail out
+// instead of mutating modelGroup after (or interleaved with) a fresher call.
+// Without this, two overlapping rebuilds (e.g. toggling the border checkbox
+// right after a hole-layout click) could each clear+repopulate modelGroup
+// out of order, leaving stale and fresh meshes both added - geometry from two
+// different configurations overlapping in one torn-looking render.
+let rebuildGeneration = 0;
+
 async function rebuild() {
+  const myGeneration = ++rebuildGeneration;
   const fontName = els.font.value;
   let font;
   try {
@@ -3470,6 +3600,7 @@ async function rebuild() {
     console.error('font load failed', e);
     return;
   }
+  if (myGeneration !== rebuildGeneration) return;
   document.getElementById('loading').style.opacity = '0';
   document.getElementById('loading').style.pointerEvents = 'none';
 
@@ -3502,6 +3633,7 @@ async function rebuild() {
   // indefinitely for a backgrounded/inactive tab, which would hang this
   // await (and the whole rebuild) forever whenever the page isn't focused.
   await new Promise((r) => setTimeout(r, 0));
+  if (myGeneration !== rebuildGeneration) return;
 
   const plateThickness = parseFloat(els.plateThickness.value);
   const depth = parseFloat((contentMode === 'picture' ? els.pictureDepth : els.textDepth).value);
@@ -3733,6 +3865,21 @@ async function rebuild() {
       depth: plateThickness, curveSegments: 24,
       bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, bevelOffset: 0,
     });
+  }
+
+  // Raised border: same material as the plate, so it merges into the single
+  // plate geometry/STL part instead of becoming its own colored region.
+  if (els.raisedBorderEnabled.checked) {
+    const raisedBorderWidth = parseFloat(els.raisedBorderWidth.value);
+    const raisedBorderHeight = parseFloat(els.raisedBorderHeight.value);
+    if (raisedBorderWidth > 0 && raisedBorderHeight > 0) {
+      const borderRingShapes = buildRaisedBorderShapes(plateShapes, raisedBorderWidth);
+      if (borderRingShapes.length) {
+        const borderRingGeo = new THREE.ExtrudeGeometry(borderRingShapes, { depth: raisedBorderHeight, curveSegments: 24, bevelEnabled: false });
+        borderRingGeo.translate(0, 0, plateThickness);
+        plateGeo = mergeGeometries([plateGeo, borderRingGeo], false);
+      }
+    }
   }
 
   const plateMat = new THREE.MeshStandardMaterial({ color: els.plateColor.value, roughness: 0.55, metalness: 0.05 });
