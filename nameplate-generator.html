@@ -465,6 +465,7 @@
               <option value="bungee">Bungee</option>
               <option value="boogaloo">Boogaloo</option>
               <option value="bowlby_one">Bowlby One</option>
+              <option value="suse">SUSE</option>
               <option value="nunito_extrabold">Nunito ExtraBold</option>
             </optgroup>
             <optgroup label="Non-Latin Scripts" data-i18n-label="fontgroup.nonLatin">
@@ -801,7 +802,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.24</div>
+    <div id="viewportVersion">v2.25</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -1622,6 +1623,7 @@ const FONT_SOURCES = {
   // Latin subset despite the name (confirmed empirically - see fonts/README.md).
   // This is Noto Sans JP subsetted to Joyo kanji + kana + Latin/punctuation
   // and converted to three.js's typeface JSON format ourselves.
+  suse: 'fonts/suse.json',
   noto_sans_jp: 'fonts/noto-sans-jp.json',
   noto_sans_cyrillic: 'fonts/noto-sans-cyrillic.json',
   noto_sans_sc: 'fonts/noto-sans-sc.json',

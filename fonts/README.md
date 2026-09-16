@@ -4,11 +4,13 @@ Some scripts (Japanese, Simplified Chinese, Cyrillic — see project history)
 aren't usable through the `@compai/font-*` CDN the rest of the app's fonts
 come from: those packages only carry a basic Latin subset despite being
 named after e.g. "Noto Sans JP", confirmed by inspecting the actual glyph
-data. The fonts in this directory were generated ourselves instead.
+data. `SUSE` is here for a different reason - it simply isn't published on
+that CDN at all (no matching npm package). The fonts in this directory were
+generated ourselves instead.
 
 License: SIL Open Font License 1.1 (see `OFL-NotoSansJP.txt`, `OFL-NotoSans.txt`,
-`OFL-NotoSansSC.txt`). The OFL permits subsetting and redistribution; it
-must not be sold on its own.
+`OFL-NotoSansSC.txt`, `OFL-SUSE.txt`). The OFL permits subsetting and
+redistribution; it must not be sold on its own.
 
 ## `noto-sans-jp.json`
 
@@ -75,4 +77,35 @@ for b1 in range(0xB0, 0xD8):       # Level-1 rows only
         except Exception:
             pass
 # -> 3755 characters, matching the known GB2312 Level-1 count
+```
+
+## `suse.json`
+
+Source: [SUSE](https://fonts.google.com/specimen/SUSE) (variable font,
+`google/fonts` repo), instanced to weight 700, subsetted to Basic Latin +
+Latin-1 Supplement + Latin Extended-A (U+0020-024F, covering the accented
+letters this app's pt-BR/es-ES translations need) + a handful of curly
+quotes/dashes (313 glyphs, ~145KB). Not on the `@compai/font-*` CDN at all
+(no matching npm package exists), unlike the other fonts here which *are*
+on Google Fonts proper but only ship a Latin subset there - added as a
+bold, blocky "toy brick lettering" style option.
+
+```bash
+# 1. Download the variable font
+curl -L -o suse-variable.ttf \
+  "https://raw.githubusercontent.com/google/fonts/main/ofl/suse/SUSE%5Bwght%5D.ttf"
+
+# 2. Instance a static weight
+python3 -m fontTools.varLib.instancer suse-variable.ttf wght=700 -o suse-700.ttf
+
+# 3. Subset to Basic Latin + Latin-1 Supplement + Latin Extended-A + a few
+#    typographic punctuation marks (suse-chars.txt: every character in
+#    U+0020-024F plus U+2018/2019/201C/201D/2013/2014/2026)
+python3 -m fontTools.subset suse-700.ttf \
+  --unicodes="U+0020-024F,U+2018,U+2019,U+201C,U+201D,U+2013,U+2014,U+2026" \
+  --output-file=suse-subset.ttf \
+  --layout-features='' --no-hinting --desubroutinize --notdef-outline
+
+# 4. Convert to three.js typeface JSON (needs opentype.js: npm i opentype.js)
+node convert.js suse-subset.ttf suse.json suse-chars.txt "SUSE"
 ```
