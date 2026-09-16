@@ -781,7 +781,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.22</div>
+    <div id="viewportVersion">v2.23</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -3543,6 +3543,27 @@ function roundedRectShape(w, h, r) {
   const shape = new THREE.Shape();
   const x = -w / 2, y = -h / 2;
   r = Math.min(r, w / 2, h / 2);
+  // r === 0 (plain Rectangle mode) needs a real special case, not just
+  // quadraticCurveTo with a zero radius: a curve whose start/control/end
+  // points are all identical is a degenerate zero-length Bezier, and how
+  // THREE's curve sampling evaluates it is floating-point-sensitive - the
+  // same shape can come out with the corner collapsed to one point on one
+  // call and left as several near-duplicate jittery points on another,
+  // depending on the exact bit pattern of w/h (e.g. autoFit's computed
+  // float vs a typed exact decimal). That inconsistency fed a real bug: two
+  // independent consumers resampling the same shape (ExtrudeGeometry's own
+  // cap triangulation vs the raised-border code's getPoints(64)) could each
+  // land on a different corner representation and disagree on the boundary,
+  // corrupting the plate's cap triangulation on some but not all rebuilds of
+  // the identical-looking rectangle. A plain lineTo has none of this.
+  if (r <= 0) {
+    shape.moveTo(x, y);
+    shape.lineTo(x + w, y);
+    shape.lineTo(x + w, y + h);
+    shape.lineTo(x, y + h);
+    shape.closePath();
+    return shape;
+  }
   shape.moveTo(x + r, y);
   shape.lineTo(x + w - r, y);
   shape.quadraticCurveTo(x + w, y, x + w, y + r);
