@@ -703,6 +703,22 @@
             <span class="val" id="raisedBorderHeightVal">1.5 mm</span>
           </div>
         </div>
+        <div class="row checkrow">
+          <input type="checkbox" id="innerBorderEnabled">
+          <label for="innerBorderEnabled"><span data-i18n="field.innerBorder">Inner border</span>
+            <span class="help-icon">?<span class="tip" data-i18n="tip.innerBorder">Adds a second raised rim further inside the plate, independent of the outer raised border above - the classic double-line tag/medallion look.</span></span>
+          </label>
+        </div>
+        <div class="row row-split" id="innerBorderRow" style="display:none;">
+          <div>
+            <label data-i18n="field.innerBorderGap">Gap from edge</label>
+            <div class="numfield"><input type="number" id="innerBorderGap" value="6" step="0.5"><span class="unit">mm</span></div>
+          </div>
+          <div>
+            <label data-i18n="field.innerBorderWidth">Ring width</label>
+            <div class="numfield"><input type="number" id="innerBorderWidth" value="1.5" step="0.5"><span class="unit">mm</span></div>
+          </div>
+        </div>
         <div class="readout"><span data-i18n="field.computedSize">Computed size</span><b id="sizeReadout">— × — mm</b></div>
       </div>
 
@@ -803,7 +819,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.27</div>
+    <div id="viewportVersion">v2.28</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -946,6 +962,10 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Adds a raised rim around the plate\'s outer edge, in the same color as the base, inset from the edge by the border width and standing above the plate by the border height.',
     'field.raisedBorderWidth': 'Border width',
     'field.raisedBorderHeight': 'Border height',
+    'field.innerBorder': 'Inner border',
+    'tip.innerBorder': 'Adds a second raised rim further inside the plate, independent of the outer raised border above - the classic double-line tag/medallion look.',
+    'field.innerBorderGap': 'Gap from edge',
+    'field.innerBorderWidth': 'Ring width',
     'section.layers': 'Layered Outlines',
     'field.layerCount': 'Outline layers',
     'layers.off': 'Off',
@@ -1115,6 +1135,10 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Adiciona uma borda elevada ao redor do contorno externo da placa, na mesma cor da base, recuada da borda pela largura definida e projetando-se acima da placa pela altura definida.',
     'field.raisedBorderWidth': 'Largura da borda',
     'field.raisedBorderHeight': 'Altura da borda',
+    'field.innerBorder': 'Borda interna',
+    'tip.innerBorder': 'Adiciona uma segunda borda elevada mais para dentro da placa, independente da borda externa acima - o clássico visual de linha dupla de plaquinhas/medalhas.',
+    'field.innerBorderGap': 'Distância da borda',
+    'field.innerBorderWidth': 'Largura do anel',
     'section.layers': 'Contornos em Camadas',
     'field.layerCount': 'Camadas de contorno',
     'layers.off': 'Desligado',
@@ -1284,6 +1308,10 @@ const TRANSLATIONS = {
     'tip.raisedBorder': 'Añade un reborde elevado alrededor del contorno exterior de la placa, del mismo color que la base, retranqueado desde el borde según el ancho definido y sobresaliendo por encima de la placa según la altura definida.',
     'field.raisedBorderWidth': 'Ancho del borde',
     'field.raisedBorderHeight': 'Altura del borde',
+    'field.innerBorder': 'Borde interior',
+    'tip.innerBorder': 'Añade un segundo reborde elevado más hacia el interior de la placa, independiente del borde exterior de arriba - el clásico look de línea doble de placas/medallas.',
+    'field.innerBorderGap': 'Distancia del borde',
+    'field.innerBorderWidth': 'Ancho del anillo',
     'section.layers': 'Contornos en Capas',
     'field.layerCount': 'Capas de contorno',
     'layers.off': 'Desactivado',
@@ -1733,6 +1761,9 @@ const els = {
   raisedBorderEnabled: document.getElementById('raisedBorderEnabled'),
   raisedBorderWidth: document.getElementById('raisedBorderWidth'),
   raisedBorderHeight: document.getElementById('raisedBorderHeight'),
+  innerBorderEnabled: document.getElementById('innerBorderEnabled'),
+  innerBorderGap: document.getElementById('innerBorderGap'),
+  innerBorderWidth: document.getElementById('innerBorderWidth'),
   topText: document.getElementById('topText'),
   bottomText: document.getElementById('bottomText'),
   borderTextSize: document.getElementById('borderTextSize'),
@@ -2214,6 +2245,11 @@ els.raisedBorderEnabled.addEventListener('change', () => {
   document.getElementById('raisedBorderHeightRow').style.display = els.raisedBorderEnabled.checked ? 'block' : 'none';
   scheduleRebuild();
 });
+els.innerBorderEnabled.addEventListener('change', () => {
+  document.getElementById('innerBorderRow').style.display = els.innerBorderEnabled.checked ? 'flex' : 'none';
+  scheduleRebuild();
+});
+[els.innerBorderGap, els.innerBorderWidth].forEach(el => el.addEventListener('input', scheduleRebuild));
 
 bindSlider(els.borderTextSize, document.getElementById('borderTextSizeVal'), 'mm');
 bindSlider(els.borderTextDepth, document.getElementById('borderTextDepthVal'), 'mm');
@@ -3354,20 +3390,34 @@ function loopsToShapes(loops) {
 // contour/bridge shapes above) so it works for every shape mode, and so any
 // holes near the edge (mounting/keyring) punch through the rim too instead of
 // being capped over by it.
-function buildRaisedBorderShapes(plateShapes, borderWidth) {
+//
+// insetFromEdge shifts the ring's own outer boundary inward from the plate's
+// real edge before measuring borderWidth off of it - used for the "inner
+// border" second ring, which sits further inside than the outer one and is
+// otherwise the exact same ring construction.
+function buildRaisedBorderShapes(plateShapes, borderWidth, insetFromEdge = 0) {
   if (typeof ClipperLib === 'undefined' || borderWidth <= 0) return [];
   const SCALE = 1000;
   const toClipper = (pts) => pts.map(p => ({ X: Math.round(p.x * SCALE), Y: Math.round(p.y * SCALE) }));
   const fromClipper = (path) => path.map(p => ({ x: p.X / SCALE, y: p.Y / SCALE }));
   const withWinding = (pts, wantPositive) => (signedArea(pts) >= 0) === wantPositive ? pts : pts.slice().reverse();
 
-  const outerPaths = [];
+  let outerPaths = [];
   const clipPaths = [];
   plateShapes.forEach(s => {
     outerPaths.push(toClipper(withWinding(s._pts || s.getPoints(64), true)));
     (s.holes || []).forEach(h => clipPaths.push(toClipper(withWinding(h.getPoints(64), true))));
   });
   if (!outerPaths.length) return [];
+
+  if (insetFromEdge > 0) {
+    const preInset = new ClipperLib.ClipperOffset(2, 0.25);
+    preInset.AddPaths(outerPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+    const shrunk = new ClipperLib.Paths();
+    preInset.Execute(shrunk, -insetFromEdge * SCALE);
+    if (!shrunk.length) return [];
+    outerPaths = shrunk.map(p => toClipper(withWinding(fromClipper(p), true)));
+  }
 
   const co = new ClipperLib.ClipperOffset(2, 0.25);
   co.AddPaths(outerPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
@@ -3769,20 +3819,39 @@ function ovalShape(w, h) {
   return shape;
 }
 
+// Nose length for the classic tag shape below - shared with rebuild()'s
+// size readout, which needs to report the nose as part of the plate's total
+// width even though tagShape() itself only takes the body width/height.
+function tagNoseLength(w, h) {
+  return Math.min((h / 2) * 1.3, w * 0.35);
+}
+
 // Classic luggage/price-tag outline (the shape behind the 🏷️ emoji): a
-// rectangular body with a pointed nose on the left carrying its own string
-// hole, baked in - this shape has no separate mounting-hole/keyring options,
-// it always ships with just the one original hole.
+// rectangular body (anchored to the origin, same as every other shape mode -
+// so text/border captions that center on (0,0) land correctly without any
+// special-casing) with a pointed nose hanging off its left edge, carrying
+// its own string hole baked in. No separate mounting-hole/keyring options -
+// this shape always ships with just the one original hole.
 function tagShape(w, h) {
   const shape = new THREE.Shape();
   const halfH = h / 2;
-  const noseLen = Math.min(halfH * 1.3, w * 0.35);
-  const bodyX0 = -w / 2 + noseLen;
+  const noseLen = tagNoseLength(w, h);
+  const bodyX0 = -w / 2;
   const bodyX1 = w / 2;
+  const tipX = bodyX0 - noseLen;
   // r <= 0 needs a plain lineTo, not a degenerate zero-length curve - see
   // roundedRectShape's r<=0 special case for why.
   const r = Math.min(halfH * 0.3, 6);
-  shape.moveTo(-w / 2, 0);
+  // Blunt the nose's point a little instead of a knife-sharp tip, using the
+  // same inset-then-quadraticCurveTo technique as the rounded body corners
+  // just below, applied to the vertex where the two nose edges meet.
+  const tipR = Math.min(noseLen * 0.3, halfH * 0.35, 3);
+  const noseEdgeLen = Math.sqrt(noseLen * noseLen + halfH * halfH) || 1;
+  const ux = noseLen / noseEdgeLen, uy = halfH / noseEdgeLen;
+  const p1 = { x: tipX + ux * tipR, y: uy * tipR };
+  const p2 = { x: tipX + ux * tipR, y: -uy * tipR };
+
+  shape.moveTo(tipR > 0.01 ? p1.x : tipX, tipR > 0.01 ? p1.y : 0);
   shape.lineTo(bodyX0, halfH);
   if (r > 0.01) {
     shape.lineTo(bodyX1 - r, halfH);
@@ -3794,10 +3863,16 @@ function tagShape(w, h) {
     shape.lineTo(bodyX1, -halfH);
   }
   shape.lineTo(bodyX0, -halfH);
+  if (tipR > 0.01) {
+    shape.lineTo(p2.x, p2.y);
+    shape.quadraticCurveTo(tipX, 0, p1.x, p1.y);
+  } else {
+    shape.lineTo(tipX, 0);
+  }
   shape.closePath();
 
   const holeR = Math.min(noseLen * 0.28, halfH * 0.35);
-  const holeX = -w / 2 + noseLen * 0.55;
+  const holeX = tipX + noseLen * 0.55;
   const hole = new THREE.Path();
   hole.absarc(holeX, 0, holeR, 0, Math.PI * 2, false);
   shape.holes.push(hole);
@@ -4078,7 +4153,11 @@ async function rebuild() {
     plateShapes = [shape];
   }
 
-  document.getElementById('sizeReadout').textContent = `${plateW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
+  // Tag mode's nose isn't part of plateW/plateH (tagShape() adds it outside
+  // that body box) - fold it back in here so the readout reports the plate's
+  // true full extent, not just the body.
+  const readoutW = shapeMode === 'tag' ? plateW + tagNoseLength(plateW, plateH) : plateW;
+  document.getElementById('sizeReadout').textContent = `${readoutW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
 
   lastPlateW = plateW; lastPlateH = plateH; lastPlateThickness = plateThickness;
   clearDimensions();
@@ -4116,8 +4195,10 @@ async function rebuild() {
     });
   }
 
-  // Raised border: same material as the plate, so it merges into the single
-  // plate geometry/STL part instead of becoming its own colored region.
+  // Raised border(s): same material as the plate, so they merge into the
+  // single plate geometry/STL part instead of becoming their own colored
+  // region. Outer and inner are independent toggles - either, both, or
+  // neither can be on.
   if (els.raisedBorderEnabled.checked) {
     const raisedBorderWidth = parseFloat(els.raisedBorderWidth.value);
     const raisedBorderHeight = parseFloat(els.raisedBorderHeight.value);
@@ -4127,6 +4208,19 @@ async function rebuild() {
         const borderRingGeo = new THREE.ExtrudeGeometry(borderRingShapes, { depth: raisedBorderHeight, curveSegments: 24, bevelEnabled: false });
         borderRingGeo.translate(0, 0, plateThickness);
         plateGeo = mergeGeometries([plateGeo, borderRingGeo], false);
+      }
+    }
+  }
+  if (els.innerBorderEnabled.checked) {
+    const innerBorderGap = parseFloat(els.innerBorderGap.value);
+    const innerBorderWidth = parseFloat(els.innerBorderWidth.value);
+    const raisedBorderHeight = parseFloat(els.raisedBorderHeight.value);
+    if (innerBorderGap >= 0 && innerBorderWidth > 0 && raisedBorderHeight > 0) {
+      const innerRingShapes = buildRaisedBorderShapes(plateShapes, innerBorderWidth, innerBorderGap);
+      if (innerRingShapes.length) {
+        const innerRingGeo = new THREE.ExtrudeGeometry(innerRingShapes, { depth: raisedBorderHeight, curveSegments: 24, bevelEnabled: false });
+        innerRingGeo.translate(0, 0, plateThickness);
+        plateGeo = mergeGeometries([plateGeo, innerRingGeo], false);
       }
     }
   }
