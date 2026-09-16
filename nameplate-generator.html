@@ -614,6 +614,7 @@
             <button data-shape="rounded" class="active" data-i18n="shape.rounded">Rounded</button>
             <button data-shape="rect" data-i18n="shape.rect">Rectangle</button>
             <button data-shape="oval" data-i18n="shape.oval">Oval</button>
+            <button data-shape="tag" data-i18n="shape.tag">Tag</button>
             <button data-shape="contour" data-i18n="shape.contour">Contour</button>
           </div>
         </div>
@@ -802,7 +803,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.26</div>
+    <div id="viewportVersion">v2.27</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -925,6 +926,7 @@ const TRANSLATIONS = {
     'shape.rounded': 'Rounded',
     'shape.rect': 'Rectangle',
     'shape.oval': 'Oval',
+    'shape.tag': 'Tag',
     'shape.contour': 'Contour',
     'field.autoFit': 'Auto-fit plate to text',
     'tip.autoFit': 'Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.',
@@ -1093,6 +1095,7 @@ const TRANSLATIONS = {
     'shape.rounded': 'Arredondado',
     'shape.rect': 'Retângulo',
     'shape.oval': 'Oval',
+    'shape.tag': 'Etiqueta',
     'shape.contour': 'Contorno',
     'field.autoFit': 'Ajustar placa ao texto automaticamente',
     'tip.autoFit': 'A largura/altura da placa são calculadas a partir do texto automaticamente. Desative para definir dimensões exatas abaixo.',
@@ -1261,6 +1264,7 @@ const TRANSLATIONS = {
     'shape.rounded': 'Redondeada',
     'shape.rect': 'Rectángulo',
     'shape.oval': 'Óvalo',
+    'shape.tag': 'Etiqueta',
     'shape.contour': 'Contorno',
     'field.autoFit': 'Ajustar placa al texto automáticamente',
     'tip.autoFit': 'El ancho/alto de la placa se calculan a partir del texto automáticamente. Desactívalo para fijar dimensiones exactas abajo.',
@@ -2090,7 +2094,9 @@ function updateShapeUI() {
   document.getElementById('cornerRow').style.display = (!contour && (shapeMode === 'rect' || shapeMode === 'rounded')) ? 'block' : 'none';
   document.getElementById('cornerRow').style.opacity = shapeMode === 'rounded' ? '1' : '0.35';
   document.getElementById('cornerRow').style.pointerEvents = shapeMode === 'rounded' ? 'auto' : 'none';
-  document.getElementById('holesSection').style.display = contour ? 'none' : 'block';
+  const tag = shapeMode === 'tag';
+  document.getElementById('holesSection').style.display = (contour || tag) ? 'none' : 'block';
+  document.getElementById('keyringSection').style.display = tag ? 'none' : 'block';
   document.getElementById('alignRow').style.display = contour ? 'none' : 'flex';
   document.getElementById('offsetsRow').style.display = (!contour && (!els.centerH.checked || !els.centerV.checked)) ? 'flex' : 'none';
   document.getElementById('offsetXRow').style.display = (!contour && !els.centerH.checked) ? 'block' : 'none';
@@ -3763,6 +3769,42 @@ function ovalShape(w, h) {
   return shape;
 }
 
+// Classic luggage/price-tag outline (the shape behind the 🏷️ emoji): a
+// rectangular body with a pointed nose on the left carrying its own string
+// hole, baked in - this shape has no separate mounting-hole/keyring options,
+// it always ships with just the one original hole.
+function tagShape(w, h) {
+  const shape = new THREE.Shape();
+  const halfH = h / 2;
+  const noseLen = Math.min(halfH * 1.3, w * 0.35);
+  const bodyX0 = -w / 2 + noseLen;
+  const bodyX1 = w / 2;
+  // r <= 0 needs a plain lineTo, not a degenerate zero-length curve - see
+  // roundedRectShape's r<=0 special case for why.
+  const r = Math.min(halfH * 0.3, 6);
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(bodyX0, halfH);
+  if (r > 0.01) {
+    shape.lineTo(bodyX1 - r, halfH);
+    shape.quadraticCurveTo(bodyX1, halfH, bodyX1, halfH - r);
+    shape.lineTo(bodyX1, -halfH + r);
+    shape.quadraticCurveTo(bodyX1, -halfH, bodyX1 - r, -halfH);
+  } else {
+    shape.lineTo(bodyX1, halfH);
+    shape.lineTo(bodyX1, -halfH);
+  }
+  shape.lineTo(bodyX0, -halfH);
+  shape.closePath();
+
+  const holeR = Math.min(noseLen * 0.28, halfH * 0.35);
+  const holeX = -w / 2 + noseLen * 0.55;
+  const hole = new THREE.Path();
+  hole.absarc(holeX, 0, holeR, 0, Math.PI * 2, false);
+  shape.holes.push(hole);
+
+  return shape;
+}
+
 function addHoles(shape, w, h, mode, diameter, margin) {
   if (mode === 'none') return;
   const r = diameter / 2;
@@ -4018,15 +4060,20 @@ async function rebuild() {
     let shape;
     if (shapeMode === 'rounded') shape = roundedRectShape(plateW, plateH, cornerR);
     else if (shapeMode === 'oval') shape = ovalShape(plateW, plateH);
+    else if (shapeMode === 'tag') shape = tagShape(plateW, plateH);
     else shape = roundedRectShape(plateW, plateH, 0);
 
-    addHoles(shape, plateW, plateH, holeMode, parseFloat(els.holeDiameter.value), parseFloat(els.holeMargin.value));
-    if (els.keyringEnabled.checked) {
-      shape = attachKeyringToShape(shape, plateW, plateH, {
-        side: keyringSide,
-        holeDiameter: parseFloat(els.keyringHoleDiameter.value),
-        tabDiameter: parseFloat(els.keyringTabSize.value),
-      }, maxLineSize);
+    // Tag shape carries its own baked-in string hole - no mounting-hole
+    // layout or keyring loop on top of it (UI hides both sections for it).
+    if (shapeMode !== 'tag') {
+      addHoles(shape, plateW, plateH, holeMode, parseFloat(els.holeDiameter.value), parseFloat(els.holeMargin.value));
+      if (els.keyringEnabled.checked) {
+        shape = attachKeyringToShape(shape, plateW, plateH, {
+          side: keyringSide,
+          holeDiameter: parseFloat(els.keyringHoleDiameter.value),
+          tabDiameter: parseFloat(els.keyringTabSize.value),
+        }, maxLineSize);
+      }
     }
     plateShapes = [shape];
   }
