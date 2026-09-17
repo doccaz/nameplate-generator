@@ -830,7 +830,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.33</div>
+    <div id="viewportVersion">v2.34</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -1533,6 +1533,7 @@ animate();
 // ---------- Dimension indicators ----------
 let showDimensions = false;
 let lastPlateW = 0, lastPlateH = 0, lastPlateThickness = 0;
+let lastDimShapeMode = 'rounded', lastDimTagSide = 'right';
 const dimensionsGroup = new THREE.Group();
 scene.add(dimensionsGroup);
 
@@ -1587,6 +1588,51 @@ function addDimension(p1, p2, tickAxis, extFrom1, extFrom2, value) {
   addDimLabel(p1.clone().lerp(p2, 0.5), value.toFixed(1) + ' mm');
 }
 
+// Tag mode's plate is built landscape and rotated 90 degrees as a finished
+// mesh (see tagLayout()'s comment) - the generic buildDimensions() below
+// assumes a plate centered on the origin with plateW/plateH as its literal
+// on-screen width/height, which no longer holds once the mesh itself has
+// been rotated and the head sticks out past one edge. This rebuilds the same
+// three measurements (width/height/thickness) starting from the pre-
+// rotation, asymmetric (head-inclusive) bounding box, then rotates every
+// point the same way rebuild() rotates the mesh, so the overlay lines up
+// with the plate actually on screen instead of where it used to sit.
+function buildTagDimensions(plateW, plateH, plateThickness, side) {
+  const mirror = side === 'left';
+  const headLen = tagLayout(plateW, plateH, side).headLen;
+  const gap = 8;
+  const hh = plateH / 2;
+  const minX = mirror ? -(plateW / 2 + headLen) : -plateW / 2;
+  const maxX = mirror ? plateW / 2 : plateW / 2 + headLen;
+  const angle = mirror ? -Math.PI / 2 : Math.PI / 2;
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const R = (x, y, z = 0) => new THREE.Vector3(x * c - y * s, x * s + y * c, z);
+
+  // Width: the pre-rotation long axis (body + head), becomes the tag's final
+  // height once rotated.
+  addDimension(
+    R(minX, -hh - gap), R(maxX, -hh - gap),
+    R(0, 1),
+    R(minX, -hh), R(maxX, -hh),
+    maxX - minX
+  );
+  // Height: the pre-rotation short axis, becomes the tag's final width.
+  addDimension(
+    R(minX - gap, -hh), R(minX - gap, hh),
+    R(1, 0),
+    R(minX, -hh), R(minX, hh),
+    plateH
+  );
+  // Thickness, at the head-side top corner.
+  addDimension(
+    R(maxX + gap, hh, 0), R(maxX + gap, hh, plateThickness),
+    R(0, 1),
+    R(maxX, hh, 0), R(maxX, hh, plateThickness),
+    plateThickness
+  );
+  updateDimLabelPositions();
+}
+
 function buildDimensions(plateW, plateH, plateThickness) {
   const gap = 8;
   const hw = plateW / 2, hh = plateH / 2;
@@ -1623,7 +1669,10 @@ document.getElementById('dimensionsToggle').addEventListener('click', (e) => {
   // (potentially slow, one-geometry-per-character) text/plate geometry for
   // no reason, since toggling dimensions doesn't change either of those.
   clearDimensions();
-  if (showDimensions) buildDimensions(lastPlateW, lastPlateH, lastPlateThickness);
+  if (showDimensions) {
+    if (lastDimShapeMode === 'tag') buildTagDimensions(lastPlateW, lastPlateH, lastPlateThickness, lastDimTagSide);
+    else buildDimensions(lastPlateW, lastPlateH, lastPlateThickness);
+  }
 });
 
 // ---------- Font loading ----------
@@ -4242,8 +4291,12 @@ async function rebuild() {
   }
 
   lastPlateW = plateW; lastPlateH = plateH; lastPlateThickness = plateThickness;
+  lastDimShapeMode = shapeMode; lastDimTagSide = tagSide;
   clearDimensions();
-  if (showDimensions) buildDimensions(plateW, plateH, plateThickness);
+  if (showDimensions) {
+    if (shapeMode === 'tag') buildTagDimensions(plateW, plateH, plateThickness, tagSide);
+    else buildDimensions(plateW, plateH, plateThickness);
+  }
 
   // Die Cut punches the glyphs straight through the single plate slab.
   // Engrave instead needs two slabs so the cut only goes partway down: a
