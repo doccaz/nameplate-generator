@@ -618,6 +618,17 @@
             <button data-shape="contour" data-i18n="shape.contour">Contour</button>
           </div>
         </div>
+        <div class="row" id="tagSideRow" style="display:none;">
+          <label data-i18n="field.tagSide">Tapered end</label>
+          <div class="segbtns" id="tagSideButtons">
+            <button data-side="right" class="active" data-i18n="tagSide.right">Right of text</button>
+            <button data-side="left" data-i18n="tagSide.left">Left of text</button>
+          </div>
+        </div>
+        <div class="row" id="tagHoleRow" style="display:none;">
+          <label data-i18n="field.tagHoleDiameter">Hole diameter</label>
+          <div class="numfield"><input type="number" id="tagHoleDiameter" value="6" step="0.5"><span class="unit">mm</span></div>
+        </div>
         <div class="row checkrow" id="autoFitRow">
           <input type="checkbox" id="autoFit" checked>
           <label for="autoFit"><span data-i18n="field.autoFit">Auto-fit plate to text</span>
@@ -819,7 +830,7 @@
     <div id="canvas-holder"></div>
     <div id="hint" data-i18n="viewport.hint">drag to orbit · scroll to zoom</div>
     <div id="renderStatus"><span class="spinner"></span><span data-i18n="viewport.rendering">Rendering…</span></div>
-    <div id="viewportVersion">v2.28</div>
+    <div id="viewportVersion">v2.33</div>
     <div id="viewportToolbar">
       <button id="dimensionsToggle" class="viewport-btn" data-i18n-title="viewport.dimensionsTitle" data-i18n="viewport.dimensions" title="Show width, height, and thickness measurement lines on the model">📏 Dimensions</button>
       <button id="resetViewBtn" class="viewport-btn" data-i18n="viewport.resetView">Reset view</button>
@@ -944,6 +955,10 @@ const TRANSLATIONS = {
     'shape.oval': 'Oval',
     'shape.tag': 'Tag',
     'shape.contour': 'Contour',
+    'field.tagSide': 'Tapered end',
+    'tagSide.right': 'Right of text',
+    'tagSide.left': 'Left of text',
+    'field.tagHoleDiameter': 'Hole diameter',
     'field.autoFit': 'Auto-fit plate to text',
     'tip.autoFit': 'Plate width/height are computed from the text automatically. Turn off to set exact dimensions below instead.',
     'field.contourMargin': 'Margin around letters',
@@ -1117,6 +1132,10 @@ const TRANSLATIONS = {
     'shape.oval': 'Oval',
     'shape.tag': 'Etiqueta',
     'shape.contour': 'Contorno',
+    'field.tagSide': 'Ponta afunilada',
+    'tagSide.right': 'À direita do texto',
+    'tagSide.left': 'À esquerda do texto',
+    'field.tagHoleDiameter': 'Diâmetro do furo',
     'field.autoFit': 'Ajustar placa ao texto automaticamente',
     'tip.autoFit': 'A largura/altura da placa são calculadas a partir do texto automaticamente. Desative para definir dimensões exatas abaixo.',
     'field.contourMargin': 'Margem ao redor das letras',
@@ -1290,6 +1309,10 @@ const TRANSLATIONS = {
     'shape.oval': 'Óvalo',
     'shape.tag': 'Etiqueta',
     'shape.contour': 'Contorno',
+    'field.tagSide': 'Punta ahusada',
+    'tagSide.right': 'A la derecha del texto',
+    'tagSide.left': 'A la izquierda del texto',
+    'field.tagHoleDiameter': 'Diámetro del orificio',
     'field.autoFit': 'Ajustar placa al texto automáticamente',
     'tip.autoFit': 'El ancho/alto de la placa se calculan a partir del texto automáticamente. Desactívalo para fijar dimensiones exactas abajo.',
     'field.contourMargin': 'Margen alrededor de las letras',
@@ -1743,6 +1766,7 @@ document.getElementById('customFontInput').addEventListener('keydown', (e) => {
 
 // ---------- Controls state ----------
 const els = {
+  tagHoleDiameter: document.getElementById('tagHoleDiameter'),
   text: document.getElementById('textInput'),
   font: document.getElementById('fontSelect'),
   fontSize: document.getElementById('fontSize'),
@@ -1810,6 +1834,7 @@ els.contourConnect.addEventListener('change', scheduleRebuild);
 
 let shapeMode = 'rounded';
 let holeMode = 'none';
+let tagSide = 'right'; // which end of the (pre-rotation, landscape) text the Tag shape's tapered head hangs off
 let textStyle = 'emboss'; // 'emboss' | 'engrave' | 'diecut'
 let lineScales = {}; // line index -> percent (100 = base text height)
 let contentMode = 'text'; // 'text' | 'picture'
@@ -2128,6 +2153,8 @@ function updateShapeUI() {
   const tag = shapeMode === 'tag';
   document.getElementById('holesSection').style.display = (contour || tag) ? 'none' : 'block';
   document.getElementById('keyringSection').style.display = tag ? 'none' : 'block';
+  document.getElementById('tagSideRow').style.display = tag ? 'block' : 'none';
+  document.getElementById('tagHoleRow').style.display = tag ? 'block' : 'none';
   document.getElementById('alignRow').style.display = contour ? 'none' : 'flex';
   document.getElementById('offsetsRow').style.display = (!contour && (!els.centerH.checked || !els.centerV.checked)) ? 'flex' : 'none';
   document.getElementById('offsetXRow').style.display = (!contour && !els.centerH.checked) ? 'block' : 'none';
@@ -2140,10 +2167,27 @@ document.getElementById('shapeButtons').addEventListener('click', (e) => {
   [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   shapeMode = btn.dataset.shape;
+  // Tag mode's classic look ships with its raised border on by default -
+  // only flips it on (never off) so an explicit later opt-out sticks.
+  if (shapeMode === 'tag' && !els.raisedBorderEnabled.checked) {
+    els.raisedBorderEnabled.checked = true;
+    document.getElementById('raisedBorderWidthRow').style.display = 'block';
+    document.getElementById('raisedBorderHeightRow').style.display = 'block';
+  }
   rebuild._framed = false;
   updateShapeUI();
   scheduleRebuild();
 });
+
+document.getElementById('tagSideButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tagSide = btn.dataset.side;
+  rebuild._framed = false;
+  scheduleRebuild();
+});
+els.tagHoleDiameter.addEventListener('input', scheduleRebuild);
 
 document.getElementById('holeButtons').addEventListener('click', (e) => {
   const btn = e.target.closest('button'); if (!btn) return;
@@ -3819,62 +3863,96 @@ function ovalShape(w, h) {
   return shape;
 }
 
-// Nose length for the classic tag shape below - shared with rebuild()'s
-// size readout, which needs to report the nose as part of the plate's total
-// width even though tagShape() itself only takes the body width/height.
-function tagNoseLength(w, h) {
-  return Math.min((h / 2) * 1.3, w * 0.35);
+// Layout for the classic tag shape below - shared between tagShape() (which
+// cuts the head/grommet hole), the raised-grommet-ring builder, and
+// rebuild()'s size readout/camera framing, so none of them can drift apart.
+//
+// tagShape() is built "landscape" - body sized from the text like any other
+// shape (autoFit's usual textWidth/textHeight, no swapping), with a tapered
+// head carrying the grommet hanging off one end of the body, same as the old
+// pointed-nose design's "head outside the w x h box" trick. rebuild() then
+// rotates the *finished* 3D geometry (plate + text, after all cutting/
+// merging) 90 degrees so the head ends up on top and the text reads sideways
+// up the tag - real gift tags are portrait and read that way, and rotating
+// the assembled geometry once is simpler and safer than threading a rotation
+// through the text-layout/glyph-cutting code paths separately.
+//
+// side picks which end of the horizontal (pre-rotation) text the head hangs
+// off - 'right' (default) ends up rotated so text reads bottom-to-top,
+// 'left' rotates the other way so it reads top-to-bottom instead; rebuild()
+// picks the rotation direction to match. holeDiameterMM is user-configurable
+// (the "Hole diameter" field only shown for this shape).
+function tagLayout(w, h, side, holeDiameterMM) {
+  const mirror = side === 'left';
+  const headLen = Math.min(h * 0.55, w * 0.32);
+  const tipHalfHeight = h * 0.22;
+  const holeR = (holeDiameterMM || 6) / 2;
+  const grommetX = w / 2 + headLen / 2;
+  return {
+    headLen,
+    tipHalfHeight,
+    grommet: { x: mirror ? -grommetX : grommetX, y: 0, holeR, outerR: holeR + Math.min(w, h) * 0.025 },
+  };
 }
 
-// Classic luggage/price-tag outline (the shape behind the 🏷️ emoji): a
-// rectangular body (anchored to the origin, same as every other shape mode -
-// so text/border captions that center on (0,0) land correctly without any
-// special-casing) with a pointed nose hanging off its left edge, carrying
-// its own string hole baked in. No separate mounting-hole/keyring options -
-// this shape always ships with just the one original hole.
-function tagShape(w, h) {
-  const shape = new THREE.Shape();
-  const halfH = h / 2;
-  const noseLen = tagNoseLength(w, h);
-  const bodyX0 = -w / 2;
-  const bodyX1 = w / 2;
-  const tipX = bodyX0 - noseLen;
-  // r <= 0 needs a plain lineTo, not a degenerate zero-length curve - see
-  // roundedRectShape's r<=0 special case for why.
-  const r = Math.min(halfH * 0.3, 6);
-  // Blunt the nose's point a little instead of a knife-sharp tip, using the
-  // same inset-then-quadraticCurveTo technique as the rounded body corners
-  // just below, applied to the vertex where the two nose edges meet.
-  const tipR = Math.min(noseLen * 0.3, halfH * 0.35, 3);
-  const noseEdgeLen = Math.sqrt(noseLen * noseLen + halfH * halfH) || 1;
-  const ux = noseLen / noseEdgeLen, uy = halfH / noseEdgeLen;
-  const p1 = { x: tipX + ux * tipR, y: uy * tipR };
-  const p2 = { x: tipX + ux * tipR, y: -uy * tipR };
+// Classic manila/shipping tag outline: a rectangle with a tapered head on
+// one end - two diagonal cuts converging toward a short flat tip, exactly
+// the two-cut head real paper shipping tags have - carrying a single hole
+// punched through the flat tip, reinforced by a raised grommet ring built
+// separately in rebuild(). No separate mounting-hole/keyring options - this
+// shape always ships with just the one hole.
+function tagShape(w, h, side, holeDiameterMM) {
+  const mirror = side === 'left';
+  const x0 = -w / 2, x1 = w / 2, yBot = -h / 2, yTop = h / 2;
+  const { headLen, tipHalfHeight, grommet } = tagLayout(w, h, side, holeDiameterMM);
+  const tipX = x1 + headLen;
+  const rCorner = Math.min(w, h) * 0.05;
+  const rShoulder = Math.min(w, h) * 0.04;
+  const rTip = Math.min(headLen, tipHalfHeight) * 0.15;
+  // Vertices in order: plain left corners, the two shoulders where the body
+  // edge bends into a diagonal cut, and the two tip corners where the cuts
+  // meet the flat tip edge carrying the grommet. Built with the head on the
+  // right, then mirrored (x negated) below when side is 'left' - simplest
+  // way to keep a single vertex list instead of two mirrored formulas.
+  const verts = [
+    { x: x0, y: yBot, r: rCorner },
+    { x: x1, y: yBot, r: rShoulder },
+    { x: tipX, y: -tipHalfHeight, r: rTip },
+    { x: tipX, y: tipHalfHeight, r: rTip },
+    { x: x1, y: yTop, r: rShoulder },
+    { x: x0, y: yTop, r: rCorner },
+  ];
+  if (mirror) verts.forEach((v) => { v.x = -v.x; });
+  const n = verts.length;
+  const edgeLen = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+  const inset = (v, towards, d) => {
+    const dx = towards.x - v.x, dy = towards.y - v.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { x: v.x + (dx / len) * d, y: v.y + (dy / len) * d };
+  };
 
-  shape.moveTo(tipR > 0.01 ? p1.x : tipX, tipR > 0.01 ? p1.y : 0);
-  shape.lineTo(bodyX0, halfH);
-  if (r > 0.01) {
-    shape.lineTo(bodyX1 - r, halfH);
-    shape.quadraticCurveTo(bodyX1, halfH, bodyX1, halfH - r);
-    shape.lineTo(bodyX1, -halfH + r);
-    shape.quadraticCurveTo(bodyX1, -halfH, bodyX1 - r, -halfH);
-  } else {
-    shape.lineTo(bodyX1, halfH);
-    shape.lineTo(bodyX1, -halfH);
-  }
-  shape.lineTo(bodyX0, -halfH);
-  if (tipR > 0.01) {
-    shape.lineTo(p2.x, p2.y);
-    shape.quadraticCurveTo(tipX, 0, p1.x, p1.y);
-  } else {
-    shape.lineTo(tipX, 0);
+  const shape = new THREE.Shape();
+  for (let i = 0; i < n; i++) {
+    const prev = verts[(i - 1 + n) % n];
+    const cur = verts[i];
+    const next = verts[(i + 1) % n];
+    // Clamp each vertex's rounding to well under half of either adjacent
+    // edge, or two insets on a short edge (e.g. the flat tip) could cross
+    // and self-intersect the outline - which ClipperLib/earcut downstream
+    // won't handle gracefully.
+    const r = Math.min(cur.r, edgeLen(prev, cur) * 0.4, edgeLen(cur, next) * 0.4);
+    const p1 = inset(cur, prev, r);
+    const p2 = inset(cur, next, r);
+    if (i === 0) shape.moveTo(p1.x, p1.y); else shape.lineTo(p1.x, p1.y);
+    // r <= 0 needs a plain lineTo, not a degenerate zero-length curve - see
+    // roundedRectShape's r<=0 special case for why.
+    if (r > 0.01) shape.quadraticCurveTo(cur.x, cur.y, p2.x, p2.y);
+    else shape.lineTo(p2.x, p2.y);
   }
   shape.closePath();
 
-  const holeR = Math.min(noseLen * 0.28, halfH * 0.35);
-  const holeX = tipX + noseLen * 0.55;
   const hole = new THREE.Path();
-  hole.absarc(holeX, 0, holeR, 0, Math.PI * 2, false);
+  hole.absarc(grommet.x, grommet.y, grommet.holeR, 0, Math.PI * 2, false);
   shape.holes.push(hole);
 
   return shape;
@@ -4135,7 +4213,7 @@ async function rebuild() {
     let shape;
     if (shapeMode === 'rounded') shape = roundedRectShape(plateW, plateH, cornerR);
     else if (shapeMode === 'oval') shape = ovalShape(plateW, plateH);
-    else if (shapeMode === 'tag') shape = tagShape(plateW, plateH);
+    else if (shapeMode === 'tag') shape = tagShape(plateW, plateH, tagSide, parseFloat(els.tagHoleDiameter.value));
     else shape = roundedRectShape(plateW, plateH, 0);
 
     // Tag shape carries its own baked-in string hole - no mounting-hole
@@ -4153,11 +4231,15 @@ async function rebuild() {
     plateShapes = [shape];
   }
 
-  // Tag mode's nose isn't part of plateW/plateH (tagShape() adds it outside
-  // that body box) - fold it back in here so the readout reports the plate's
-  // true full extent, not just the body.
-  const readoutW = shapeMode === 'tag' ? plateW + tagNoseLength(plateW, plateH) : plateW;
-  document.getElementById('sizeReadout').textContent = `${readoutW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
+  // Tag mode's body is built landscape and rotated 90 degrees at the very
+  // end (see tagLayout()'s comment) - report the plate's final post-rotation
+  // extent here, not the pre-rotation body box.
+  if (shapeMode === 'tag') {
+    const { headLen } = tagLayout(plateW, plateH);
+    document.getElementById('sizeReadout').textContent = `${plateH.toFixed(1)} × ${(plateW + headLen).toFixed(1)} mm`;
+  } else {
+    document.getElementById('sizeReadout').textContent = `${plateW.toFixed(1)} × ${plateH.toFixed(1)} mm`;
+  }
 
   lastPlateW = plateW; lastPlateH = plateH; lastPlateThickness = plateThickness;
   clearDimensions();
@@ -4225,6 +4307,22 @@ async function rebuild() {
     }
   }
 
+  // Tag shape's grommet: a raised ring standing above the plate around its
+  // own hole, like a real metal eyelet - intrinsic to this shape (not a
+  // toggle), same as the hole itself.
+  if (shapeMode === 'tag') {
+    const grommet = tagLayout(plateW, plateH, tagSide, parseFloat(els.tagHoleDiameter.value)).grommet;
+    const grommetHeight = Math.min(1.2, plateThickness * 0.5);
+    const grommetShape = new THREE.Shape();
+    grommetShape.absarc(grommet.x, grommet.y, grommet.outerR, 0, Math.PI * 2, false);
+    const grommetHole = new THREE.Path();
+    grommetHole.absarc(grommet.x, grommet.y, grommet.holeR, 0, Math.PI * 2, false);
+    grommetShape.holes.push(grommetHole);
+    const grommetGeo = new THREE.ExtrudeGeometry(grommetShape, { depth: grommetHeight, curveSegments: 24, bevelEnabled: false });
+    grommetGeo.translate(0, 0, plateThickness);
+    plateGeo = mergeGeometries([plateGeo, grommetGeo], false);
+  }
+
   // Layered outlines: each ring is its own colored part sitting on the bed
   // (z=0), not merged into the plate - they're separate print regions like
   // the text, not part of the base plate's own material.
@@ -4277,9 +4375,24 @@ async function rebuild() {
     modelGroup.add(new THREE.Mesh(r.geo, mat));
   });
 
+  // Tag mode was built landscape (see tagLayout()'s comment) - rotate the
+  // finished geometry (not just the view) so the head ends up on top and the
+  // export/STL comes out already in that orientation, not just the preview.
+  // The head hangs off +x when tagSide is 'right' (mirrored to -x for
+  // 'left') - rotate whichever way sends that end to +y (top), which also
+  // flips the text's reading direction between the two options.
+  if (shapeMode === 'tag') {
+    const rotation = tagSide === 'left' ? -Math.PI / 2 : Math.PI / 2;
+    plateGeo.rotateZ(rotation);
+    contentRegions.forEach((r) => r.geo.rotateZ(rotation));
+  }
+
   // frame camera target roughly on model
   controls.target.set(0, 0, plateThickness / 2);
-  const maxDim = Math.max(plateW, plateH) + (els.keyringEnabled.checked ? parseFloat(els.keyringTabSize.value) : 0);
+  const tagHeadLen = shapeMode === 'tag' ? tagLayout(plateW, plateH).headLen : 0;
+  const maxDim = shapeMode === 'tag'
+    ? Math.max(plateH, plateW + tagHeadLen)
+    : Math.max(plateW, plateH) + (els.keyringEnabled.checked ? parseFloat(els.keyringTabSize.value) : 0);
   lastMaxDim = maxDim;
   if (!rebuild._framed) {
     frameCamera(maxDim, plateThickness);
